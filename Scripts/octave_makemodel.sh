@@ -2264,7 +2264,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					   		do
 						    		echo -e "--------------------" >&1
 							  	echo "Validating on: $bench_nfolds"
-							  	rain_nfolds=()
+							  	train_nfolds=()
 							  	for bench_search in "${TRAIN_SET[@]}"
 							    	do
 					       	 		[[ $bench_search != $bench_nfolds ]] && train_nfolds+=($bench_search)
@@ -2568,7 +2568,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						   		do
 							    		echo -e "--------------------" >&1
 								  	echo "Validating on: $bench_nfolds"
-								  	rain_nfolds=()
+								  	train_nfolds=()
 								  	for bench_search in "${TRAIN_SET[@]}"
 								    	do
 							  	 		[[ $bench_search != $bench_nfolds ]] && train_nfolds+=($bench_search)
