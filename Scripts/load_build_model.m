@@ -7,25 +7,25 @@ if ( length (varargin) < 1 )
     error ("Please use load_build_model(0) for more info");
     return
   else
-    mode = varargin{1};
+    modeSel = varargin{1};
 endif
 
 #Detailed infromation about available program modes
-if ( mode == 0 )
+if ( modeSel == 0 )
   disp("List of all the function modes:")
   disp("0) Mode information")
   disp("1) Platformm physical information including averages and totals of model events. No model generation.")
   disp("Need to pass 6 arguments to load_build_model(mode,data_set,start_row,start_col,power_col,events_col)")
   disp("2) Model generation with detailed output.")
-  disp("Need to pass 7 arguments to load_build_model(mode,train_set,test_set,start_row,start_col,power_col,events_col)")
+  disp("Need to pass 8 arguments to load_build_model(modeSel,algoSel,train_set,test_set,start_row,start_col,power_col,events_col)")
   disp("3) Cross-model generation with detailed output.")
-  disp("Need to pass 11 arguments to load_build_model(mode,train_set_1,test_set_1,start_row_1,start_col_1,train_set_2,test_set_2,start_row_2,start_col_2,power_col,events_col)")
+  disp("Need to pass 12 arguments to load_build_model(mode,algoSel,train_set_1,test_set_1,start_row_1,start_col_1,train_set_2,test_set_2,start_row_2,start_col_2,power_col,events_col)")
   disp("4) Model generation with per-sample model performance.")
-  disp("Need to pass 7 arguments to load_build_model(mode,train_set,test_set,start_row,start_col,power_col,events_col)")
+  disp("Need to pass 8 arguments to load_build_model(mode,algoSel,train_set,test_set,start_row,start_col,power_col,events_col)")
   return
 endif
 
-if ( mode == 1 )
+if ( modeSel == 1 )
 
   %Sanity check argument number
   if ( length (varargin) != 6 )
@@ -63,22 +63,23 @@ if ( mode == 1 )
 
 endif
 
-if (mode == 2)
+if (modeSel == 2)
 
   %Sanity check argument number
-  if ( length (varargin) != 7 )
-      error ("Need to pass 7 arguments to load_build_model() for mode 2");
+  if ( length (varargin) != 8 )
+      error ("Need to pass 8 arguments to load_build_model() for mode 2");
       error ("Please use load_build_model(0) for more info");
       return
   endif
   
   %Read input data
-  train_set=varargin{2};
-  test_set=varargin{3};
-  start_row=varargin{4};
-  start_col=varargin{5};
-  power_col=varargin{6};
-  events_col=varargin{7};
+  algSel=varargin{2};
+  train_set=varargin{3};
+  test_set=varargin{4};
+  start_row=varargin{5};
+  start_col=varargin{6};
+  power_col=varargin{7};
+  events_col=varargin{8};
   
   %Open train set file
   fid = fopen (train_set, "r");
@@ -90,10 +91,31 @@ if (mode == 2)
   train_reg=[ones(size(train_set,1),1),train_set(:,str2num(events_col).-start_col)]; 
 
   %Compute model
-  #[m, maxcorr, maxcorrindices, avgcorr] = build_model(train_reg,train_set(:,power_col.-start_col));
-  #[m,sigma,res2] = ols(train_set(:,power_col.-start_col),train_reg);
-  m = lsqnonneg(train_reg,train_set(:,power_col.-start_col));
+  %[m] = build_model(train_reg,train_set(:,power_col.-start_col));
+  %[m,sigma,res2] = ols(train_set(:,power_col.-start_col),train_reg);
+  %m = lsqnonneg(train_reg,train_set(:,power_col.-start_col));
+  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
   
+  %Calculate regressor cross-correlation
+  maxcorr=0.0;
+  totalcorr=0.0;
+  numcorr=0;
+  combination_indices = nchoosek(1:size(train_reg,2),2);
+  for ii = 1:size(combination_indices,1)
+    if (std(train_reg(:,combination_indices(ii,1))) != 0 && std(train_reg(:,combination_indices(ii,2))) != 0)  # chech that columns are not constant
+      cc = spearman(train_reg(:,combination_indices(ii,1)),train_reg(:,combination_indices(ii,2)));   # calculate correlation coefficient
+      totalcorr=totalcorr+abs(cc);
+      numcorr++;
+      if (abs(cc) > 0.0)
+        if ( abs(cc) > maxcorr )
+          maxcorr=abs(cc);
+          maxcorrindices=(combination_indices(ii,:).-1);
+        endif
+      endif
+    endif
+  endfor
+
+  avgcorr=totalcorr/numcorr;
   
   %Open test set file
   fid = fopen (test_set, "r");
@@ -150,28 +172,30 @@ if (mode == 2)
   
 endif
 
-if (mode == 3)
+if (modeSel == 3)
 
   %Sanity check argument number
-  if ( length (varargin) != 11 )
-      error ("Need to pass 11 arguments to load_build_model() for mode 3");
+  if ( length (varargin) != 12 )
+      error ("Need to pass 12 arguments to load_build_model() for mode 3");
       error ("Please use load_build_model(0) for more info");
       return
   endif
   
   %Read input data
-  train_set_1=varargin{2};
-  test_set_1=varargin{3};
-  start_row_1=varargin{4};
-  start_col_1=varargin{5};
+  algSel=varargin{2};
   
-  train_set_2=varargin{6};  
-  test_set_2=varargin{7};
-  start_row_2=varargin{8};
-  start_col_2=varargin{9};
+  train_set_1=varargin{3};
+  test_set_1=varargin{4};
+  start_row_1=varargin{5};
+  start_col_1=varargin{6};
   
-  power_col=varargin{10};
-  events_col=varargin{11}
+  train_set_2=varargin{7};  
+  test_set_2=varargin{8};
+  start_row_2=varargin{9};
+  start_col_2=varargin{10};
+  
+  power_col=varargin{11};
+  events_col=varargin{12}
   
   
   
@@ -206,7 +230,29 @@ if (mode == 3)
   train_reg=[ones(size(train_set_2,1),1),train_set_2(:,str2num(events_col).-start_col_2)];
   
   %Compute model for second core
-  [m, maxcorr, maxcorrindices, avgcorr] = build_model(train_reg,train_set_2(:,power_col.-start_col_2));
+  %[m] = build_model(train_reg,train_set_2(:,power_col.-start_col_2));
+  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
+   
+  %Calculate regressor cross-correlation
+  maxcorr=0.0;
+  totalcorr=0.0;
+  numcorr=0;
+  combination_indices = nchoosek(1:size(train_reg,2),2);
+  for ii = 1:size(combination_indices,1)
+    if (std(train_reg(:,combination_indices(ii,1))) != 0 && std(train_reg(:,combination_indices(ii,2))) != 0)  # chech that columns are not constant
+      cc = spearman(train_reg(:,combination_indices(ii,1)),train_reg(:,combination_indices(ii,2)));   # calculate correlation coefficient
+      totalcorr=totalcorr+abs(cc);
+      numcorr++;
+      if (abs(cc) > 0.0)
+        if ( abs(cc) > maxcorr )
+          maxcorr=abs(cc);
+          maxcorrindices=(combination_indices(ii,:).-1);
+        endif
+      endif
+    endif
+  endfor
+
+  avgcorr=totalcorr/numcorr;
 
   %Again extract test data from first file (first core) and scale events
   test_reg=[ones(size(test_set_1,1),1),test_set_1(:,str2num(events_col).-start_col_1).*scaling_factors];
@@ -244,22 +290,23 @@ if (mode == 3)
   
 endif
 
-if (mode == 4)
+if (modeSel == 4)
 
   %Sanity check argument number
-  if ( length (varargin) != 7 )
-      error ("Need to pass 7 arguments to load_build_model() for mode 2");
+  if ( length (varargin) != 8 )
+      error ("Need to pass 8 arguments to load_build_model() for mode 2");
       error ("Please use load_build_model(0) for more info");
       return
   endif
   
   %Read input data
-  train_set=varargin{2};
-  test_set=varargin{3};
-  start_row=varargin{4};
-  start_col=varargin{5};
-  power_col=varargin{6};
-  events_col=varargin{7};
+  algSel=varargin{2};
+  train_set=varargin{3};
+  test_set=varargin{4};
+  start_row=varargin{5};
+  start_col=varargin{6};
+  power_col=varargin{7};
+  events_col=varargin{8};
   
   %Open train set file
   fid = fopen (train_set, "r");
@@ -271,7 +318,29 @@ if (mode == 4)
   train_reg=[ones(size(train_set,1),1),train_set(:,str2num(events_col).-start_col)]; 
 
   %Compute model
-  [m, maxcorr, maxcorrindices, avgcorr] = build_model(train_reg,train_set(:,power_col.-start_col));
+  %m = build_model(train_reg,train_set(:,power_col.-start_col));
+  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
+
+  %Calculate regressor cross-correlation
+  maxcorr=0.0;
+  totalcorr=0.0;
+  numcorr=0;
+  combination_indices = nchoosek(1:size(train_reg,2),2);
+  for ii = 1:size(combination_indices,1)
+    if (std(train_reg(:,combination_indices(ii,1))) != 0 && std(train_reg(:,combination_indices(ii,2))) != 0)  # chech that columns are not constant
+      cc = spearman(train_reg(:,combination_indices(ii,1)),train_reg(:,combination_indices(ii,2)));   # calculate correlation coefficient
+      totalcorr=totalcorr+abs(cc);
+      numcorr++;
+      if (abs(cc) > 0.0)
+        if ( abs(cc) > maxcorr )
+          maxcorr=abs(cc);
+          maxcorrindices=(combination_indices(ii,:).-1);
+        endif
+      endif
+    endif
+  endfor
+
+  avgcorr=totalcorr/numcorr;
 
   %Open test set file
   fid = fopen (test_set, "r");
@@ -287,13 +356,6 @@ if (mode == 4)
 
   %Compute predicted power using model and events
   pred_power=(test_reg(:,:)*m);
-  
-%  %Adjust model residual
-%  offset=mean(pred_power)-mean(test_power);    
-%  m(1,:)=m(1,:)-offset;
-%  
-%  %Recompute predicted power
-%  pred_power=(test_reg(:,:)*m);
 
 %  %Use average power to compute energy  
 %  pred_temp=(pred_power(:,:).*(test_reg(:,3)./80000000));

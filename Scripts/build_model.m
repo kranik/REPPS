@@ -1,4 +1,4 @@
-function [m, maxcorr, maxcorrindices, avgcorr] = build_model(X,Y)
+function m = build_model(algSel,X,Y)
 #   Build linear regression model of form y = f(x)
 #
 ###########################################################
@@ -23,28 +23,7 @@ function [m, maxcorr, maxcorrindices, avgcorr] = build_model(X,Y)
 #   CLow    Lower endpoints of 95% confidence intervals
 #   CHigh   Higher endpoints of 95% confidence interals
 
-    maxcorr=0.0;
-    totalcorr=0.0;
-    numcorr=0;
-    combination_indices = nchoosek(1:size(X,2),2);
-    for ii = 1:size(combination_indices,1)
-        if (std(X(:,combination_indices(ii,1))) != 0 && std(X(:,combination_indices(ii,2))) != 0)  # chech that columns are not constant
-            cc = spearman(X(:,combination_indices(ii,1)),X(:,combination_indices(ii,2)));   # calculate correlation coefficient
-            totalcorr=totalcorr+abs(cc);
-            numcorr++;
-            if (abs(cc) > 0.0)
-                 #disp(["Warning: correlation between activity measures " mat2str(combination_indices(ii,:)) " is " num2str(cc)]);
-                 if ( abs(cc) > maxcorr )
-                      maxcorr=abs(cc);
-                      maxcorrindices=(combination_indices(ii,:).-1);
-                 endif
-                 
-            endif
-        endif
-    endfor
-
-    avgcorr=totalcorr/numcorr;
-
+if ( algSel == 1 )
     m   = inv(X'*X)*X'*Y;   # calculate model coefficients
 
 
@@ -61,3 +40,14 @@ function [m, maxcorr, maxcorrindices, avgcorr] = build_model(X,Y)
 
     CLow        = m - norminv(1-Alpha/2)*sqrt(1/length(Y).*sig_square.*d);
     CHigh       = m + norminv(1-Alpha/2)*sqrt(1/length(Y).*sig_square.*d);
+endif    
+
+if ( algSel == 2 )
+  [m,sigma,res2] = ols(Y,X);
+endif  
+
+if ( algSel == 3 )
+  m = lsqnonneg(X,Y);
+endif
+
+endfunction

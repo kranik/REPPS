@@ -9,13 +9,15 @@ EV_NUM=0
 DBG=0
 
 #requires getops, but this should not be an issue since ints built in bash
-while getopts ":r:s:h" opt;
+while getopts ":r:s:a:t:h" opt;
 do
 	case $opt in
     	h)
 			echo "Available flags and options:" >&1
 			echo "-r [FILEPATH] -> Specify the results file to edit." >&1
 			echo "-s [FILE] -> Specify the save file for the updated results file. If no save file - output to terminal." >&1
+			echo "-a [NUMBER LIST] -> Specify events(sensors) to be averaged." >&1
+			echo "-t [NUMBER LIST] -> Specify events(PMU) to be totalled." >&1
 			echo "Mandatory options are: -r [FILE]" >&1
 			exit 0 
     		;;
@@ -47,7 +49,6 @@ do
 		           		echo -e "===================="
 						exit 1
 		               else
-		                   #RESULTS_BENCH_LIST=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL="$RESULTS_BENCH_COL" -v BENCH=0 'BEGIN{FS=SEP}{ if(NR > START && $COL != BENCH){print ($COL);BENCH=$COL} }' < "$RESULTS_FILE" | sort -u | sort -R | sed 's/ /\\n/g' )
 		                   RESULTS_BENCH_LIST=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL="$RESULTS_BENCH_COL" -v BENCH=0 'BEGIN{FS=SEP}{ if(NR > START && $COL != BENCH){print ($COL);BENCH=$COL} }' < "$RESULTS_FILE" | sort -u | tr "\n" "," | head -c -1 )
 		                   if [[ -z $RESULTS_BENCH_LIST ]]; then
 				               echo "Unable to extract benchmarks from result file!" >&2
@@ -87,10 +88,14 @@ do
 		               fi
 		               
 		               HEADER=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) 'BEGIN{FS=SEP}{if(NR==START){ print $0; exit} }' < "$RESULTS_FILE" )
-		               #CCYCLES_COLUMN=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) 'BEGIN{FS=SEP}{if(NR==START){ for(i=1;i<=NF;i++){ if($i ~ /time/) { print i; exit} } } }' < "$RESULTS_FILE")
-		               CCYCLES_COLUMN=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) 'BEGIN{FS=SEP}{if(NR==START){ for(i=1;i<=NF;i++){ if($i ~ /Energy/) { print i+1; exit} } } }' < "$RESULTS_FILE")
-		               SENS_NUM=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) -v COL_START=$((RESULTS_FREQ_COL+1)) -v COL_END="$CCYCLES_COLUMN" 'BEGIN{FS=SEP}{if(NR==START){ for(i=COL_START;i<COL_END;i++) print $i} }' < "$RESULTS_FILE" | wc -l)
-		               EV_NUM=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) -v COL_START="$CCYCLES_COLUMN" 'BEGIN{FS=SEP}{if(NR==START){ for(i=COL_START;i<=NF;i++) print $i} }' < "$RESULTS_FILE" | wc -l)
+					#Extract events columns from result file
+					RESULTS_EVENTS_COL_START=$RESULTS_FREQ_COL
+					RESULTS_EVENTS_COL_END=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) 'BEGIN{FS=SEP}{if(NR==START){ print NF; exit } }' < "$RESULTS_FILE")
+					if [[ "$RESULTS_EVENTS_COL_START" -eq "$RESULTS_EVENTS_COL_END" ]]; then
+						echo "No events present in result files!" >&2
+						echo -e "===================="
+						exit 1
+					fi
           		fi
 			fi
 			;;
@@ -125,6 +130,24 @@ do
 		    		SAVE_FILE="$OPTARG"
 			fi
 			;;   
+		a)
+			if [[ -n  $EVENTS_AVERAGES_LIST ]]; then
+		    		echo "Invalid input: option -a has already been used!" >&2
+				echo -e "===================="
+		    		exit 1
+			else
+				EVENTS_AVERAGES_LIST="$OPTARG"
+                	fi
+		    	;;
+		t)
+			if [[ -n  $EVENTS_TOTALS_LIST ]]; then
+		    		echo "Invalid input: option -t has already been used!" >&2
+				echo -e "===================="
+		    		exit 1
+			else
+				EVENTS_TOTALS_LIST="$OPTARG"
+                	fi
+		    	;;
 		:)
 			echo "Option: -$OPTARG requires an argument" >&2
 			echo -e "===================="
@@ -137,6 +160,115 @@ do
 			;;
 	esac
 done
+
+#Critical Checks
+#-a flag
+if [[ -n $EVENTS_AVERAGES_LIST ]]; then
+	spaced_EVENTS_AVERAGES_LIST="${EVENTS_AVERAGES_LIST//,/ }"
+	for EVENT in $spaced_EVENTS_AVERAGES_LIST
+	do
+		#Check if events list is in bounds
+		if [[ "$EVENT" -gt $RESULTS_EVENTS_COL_END || "$EVENT" -lt $RESULTS_EVENTS_COL_START ]]; then 
+			echo "Selected event -e $EVENT is out of bounds/invalid to result file events. Needs to be an integer value betweeen [$RESULTS_EVENTS_COL_START:$RESULTS_EVENTS_COL_END]." >&2
+			echo -e "===================="
+			exit 1
+		fi
+	done
+fi
+
+#Checkif events string contains duplicates
+if [[ $(echo "$EVENTS_AVERAGES_LIST" | tr "," "\n" | wc -l) -gt $(echo "$EVENTS_AVERAGES_LIST" | tr "," "\n" | sort | uniq | wc -l) ]]; then
+	echo "Selected event list -e $EVENTS_AVERAGES_LIST contains duplicates." >&2
+	echo -e "===================="
+	exit 1
+fi
+
+#-t flag
+if [[ -n $EVENTS_TOTALS_LIST ]]; then
+	spaced_EVENTS_TOTALS_LIST="${EVENTS_TOTALS_LIST//,/ }"
+	for EVENT in $spaced_EVENTS_TOTALS_LIST
+	do
+		#Check if events list is in bounds
+		if [[ "$EVENT" -gt $RESULTS_EVENTS_COL_END || "$EVENT" -lt $RESULTS_EVENTS_COL_START ]]; then 
+			echo "Selected event -e $EVENT is out of bounds/invalid to result file events. Needs to be an integer value betweeen [$RESULTS_EVENTS_COL_START:$RESULTS_EVENTS_COL_END]." >&2
+			echo -e "===================="
+			exit 1
+		fi
+	done
+fi
+
+#Checkif events string contains duplicates
+if [[ $(echo "$EVENTS_TOTALS_LIST" | tr "," "\n" | wc -l) -gt $(echo "$EVENTS_TOTALS_LIST" | tr "," "\n" | sort | uniq | wc -l) ]]; then
+	echo "Selected event list -e $EVENTS_TOTALS_LIST contains duplicates." >&2
+	echo -e "===================="
+	exit 1
+fi
+
+if [[ -z $EVENTS_AVERAGES_LIST && -z $EVENTS_TOTALS_LIST ]]; then
+    	echo "No events list specified! Expected -a and/or -t flag to select what to do with which data columns." >&2
+    	echo -e "====================" >&1
+    	exit 1
+fi
+
+#Check if event operations lists contain duplicates
+if [[ -n $EVENTS_AVERAGES_LIST && -n $EVENTS_TOTALS_LIST ]]; then
+	for EVENT in $spaced_EVENTS_AVERAGES_LIST
+	do
+		for EVENT2 in $spaced_EVENTS_TOTALS_LIST
+		do
+			if [[ "$EVENT" == "$EVENT2" ]]; then 
+				echo "Selected event -a $EVENT is also present in totals list -t $EVENTS_TOTALS_LIST. Please use either averages ot totals for each event (you should not need two metrics)." >&2
+				echo -e "===================="
+				exit 1
+			fi
+		done
+	done
+fi
+
+#Check if all benchmarks have all runs and frequencies
+IFS="," read -a bencharr <<< "$RESULTS_BENCH_LIST"
+IFS="," read -a runarr <<< "$RESULTS_RUN_LIST"
+IFS="," read -a freqarr <<< "$RESULTS_FREQ_LIST"
+IFS="," read -a evavgarr <<< "$EVENTS_AVERAGES_LIST"
+IFS="," read -a evtotarr <<< "$EVENTS_TOTALS_LIST"
+
+for bench in $(seq 0 $((${#bencharr[@]}-1)) )
+do 
+	#echo ${bencharr[$bench]}
+	for run in $(seq 0 $((${#runarr[@]}-1)) )
+	do 
+		#echo ${runarr[$run]}
+		for freq in $(seq 0 $((${#freqarr[@]}-1)) )
+		do 
+			#echo ${freqarr[$freq]};
+			FLAG=$(awk -v START=$RESULTS_START_LINE -v SEP='\t' -v BENCH_COL="$RESULTS_BENCH_COL" -v BENCH_TEST=${bencharr[$bench]} -v RUN_COL="$RESULTS_RUN_COL" -v RUN_TEST=${runarr[$run]} -v FREQ_COL="$RESULTS_FREQ_COL" -v FREQ_TEST=${freqarr[$freq]} 'BEGIN{FS = SEP;}{ if (NR >= START && $BENCH_COL == BENCH_TEST && $RUN_COL == RUN_TEST && $FREQ_COL == FREQ_TEST ){print "Y";exit}}' < "$RESULTS_FILE")
+			if [[ $FLAG != "Y" ]]; then 
+				echo "WARNING: Data for ${bencharr[$bench]} ${runarr[$run]} ${freqarr[$freq]} not present in results file!"
+				DATAMISSING_FLAG=1
+			fi
+		done
+	done
+done
+
+if [[ $DATAMISSING_FLAG == 1 ]]; then
+    	echo -e "Possibly incomplete data in results file -> $RESULTS_FILE" >&1
+	echo -e "Several warnings have been issued when processing." >&1
+	echo -e "Continue with data processing? (Y/N)" >&1
+    	while true;
+    	do
+		read -r USER_INPUT
+		if [[ "$USER_INPUT" == Y || "$USER_INPUT" == y ]]; then
+	    		echo "Using existing file $OPTARG" >&1
+	    		break
+		elif [[ "$USER_INPUT" == N || "$USER_INPUT" == n ]]; then
+	    		echo "Cancelled using save file $OPTARG Program exiting." >&1
+	    		exit 0                            
+		else
+	    		echo "Invalid input: $USER_INPUT !(Expected Y/N)" >&2
+			echo "Please enter correct input: " >&2
+		fi
+    	done
+fi
 
 #Sanity checks
 echo -e "===================="
@@ -152,166 +284,93 @@ echo -e "--------------------" >&1
 #Results file sanito check
 echo -e "Using specified results file -> $RESULTS_FILE" >&1
 echo -e "--------------------" >&1
-echo -e "Extracted run list from file:" >&1
-echo -e  "$RESULTS_RUN_LIST" >&1
-#RUNS="${RESULTS_RUN_LIST//,/ }"
-echo -e "--------------------" >&1
+echo -e "Extracted benchmark column from file:">&1
+echo -e "$RESULTS_BENCH_COL" >&1
 echo -e "Extracted benchmark list from file:">&1
 echo -e "$RESULTS_BENCH_LIST" >&1
 #BENCHS="${RESULTS_BENCH_LIST//,/ }"
 echo -e "--------------------" >&1
+echo -e "Extracted run column from file:">&1
+echo -e "$RESULTS_RUN_COL" >&1
+echo -e "Extracted run list from file:" >&1
+echo -e  "$RESULTS_RUN_LIST" >&1
+#RUNS="${RESULTS_RUN_LIST//,/ }"
+echo -e "--------------------" >&1
 echo -e "Extracted freqeuncy column from file:">&1
 echo -e "$RESULTS_FREQ_COL" >&1
-echo -e "--------------------" >&1
 echo -e "Extracted frequency list from file:" >&1
 echo -e "$RESULTS_FREQ_LIST" >&1
 #FREQS="${RESULTS_FREQ_LIST//,/ }"
 echo -e "--------------------" >&1
-echo -e "Extracted CPU CYCLES column from file:">&1
-echo -e "$CCYCLES_COLUMN" >&1
-echo -e "--------------------" >&1
-echo -e "Extracted number of sensors from file:">&1
-echo -e "$SENS_NUM" >&1
-echo -e "--------------------" >&1
-echo -e "Extracted number of events from file:">&1
-echo -e "$EV_NUM" >&1
-echo -e "--------------------" >&1
+if [[ -n $EVENTS_AVERAGES_LIST ]]; then
+	EVENTS_AVERAGES_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) -v COLUMNS="$EVENTS_AVERAGES_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]"(avg)"}}}' < "$RESULTS_FILE" | tr "\n" "," | head -c -1)
+	echo -e "Extracted averages list from file:" >&1
+	echo -e  "$EVENTS_AVERAGES_LIST -> $EVENTS_AVERAGES_LIST_LABELS" >&1
+	echo -e "--------------------" >&1
+fi
+if [[ -n $EVENTS_TOTALS_LIST ]]; then
+	EVENTS_TOTALS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULTS_START_LINE-1)) -v COLUMNS="$EVENTS_TOTALS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]"(tot)"}}}' < "$RESULTS_FILE" | tr "\n" "," | head -c -1)
+	echo -e "Extracted totals list from file:" >&1
+	echo -e  "$EVENTS_TOTALS_LIST -> $EVENTS_TOTALS_LIST_LABELS" >&1
+	echo -e "--------------------" >&1
+fi
 echo -e "Extracted header from file:">&1
 echo -e "$HEADER" >&1
+echo -e "Constructing new header:" >&1
+[[ -n $EVENTS_AVERAGES_LIST ]] && EVENTS_AVERAGES_LIST_LABELS="\t"$EVENTS_AVERAGES_LIST_LABELS
+[[ -n $EVENTS_TOTALS_LIST ]] && EVENTS_TOTALS_LIST_LABELS="\t"$EVENTS_TOTALS_LIST_LABELS
+BETTER_HEADER=$(echo "#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tSamples(#)$EVENTS_AVERAGES_LIST_LABELS$EVENTS_TOTALS_LIST_LABELS" | tr "," "\t")
+echo -e "$BETTER_HEADER" >&1
 echo -e "--------------------" >&1
 #Save file sanity check
 if [[ -z $SAVE_FILE ]]; then 
 	echo "No save file specified! Output to terminal." >&1
+	echo -e "--------------------" >&1
+	echo -e "====================" >&1
+	echo -e "$BETTER_HEADER" >&1
 else
 	echo "Using user specified output save file -> $SAVE_FILE" >&1
-    echo -e "$HEADER" > "$SAVE_FILE"
+	echo -e "--------------------" >&1
+	echo -e "====================" >&1
+    	echo -e "$BETTER_HEADER" > "$SAVE_FILE"
 fi
-echo -e "--------------------" >&1
-echo -e "===================="
 
-SAMPLES=0
-DATAPOINT=0
-
-#Get data for first benchmark
-#TIME_BENCH_DATA=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL_START="$RESULTS_BENCH_COL" -v COL_END=$((RESULTS_FREQ_COL+1)) 'BEGIN{FS=SEP}{if(NR==START){ for(i=COL_START;i<COL_END;i++) print $i} }' < "$RESULTS_FILE" | tr "\n" " " | head -c -1)
-RUN_SELECT=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL="$RESULTS_RUN_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-FREQ_SELECT=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL="$RESULTS_FREQ_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-BENCH_SELECT=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL="$RESULTS_BENCH_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-for i in $(seq 1 "$SENS_NUM")
-do
-    eval SENS_$i=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL=$((RESULTS_FREQ_COL+"$i")) 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-    (( $DBG )) && echo -e "SENS_$i=""$(eval echo -e "\$SENS_$i")"
+TIMESTAMP=1
+for freq in $(seq 0 $((${#freqarr[@]}-1)) )
+do 
+	for run in $(seq 0 $((${#runarr[@]}-1)) )
+	do 
+		for bench in $(seq 0 $((${#bencharr[@]}-1)) )
+		do 
+			SAMPLECOUNT=$(awk -v START=$RESULTS_START_LINE -v SEP='\t' -v FREQ_COL="$RESULTS_FREQ_COL" -v FREQ_TEST=${freqarr[$freq]} -v RUN_COL="$RESULTS_RUN_COL" -v RUN_TEST=${runarr[$run]} -v BENCH_COL="$RESULTS_BENCH_COL" -v BENCH_TEST=${bencharr[$bench]} 'BEGIN{FS = SEP; LINES = 0}{ if (NR >= START && $FREQ_COL == FREQ_TEST && $RUN_COL == RUN_TEST && $BENCH_COL == BENCH_TEST){LINES++}}END{print LINES}' < "$RESULTS_FILE")
+			#echo $SAMPLECOUNT
+			if [[ $SAMPLECOUNT == 0 ]]; then
+				continue
+			else
+				LINEDATA=""
+				for colavg in $(seq 0 $((${#evavgarr[@]}-1)) )
+				do 
+					EVTOT=$(awk -v START=$RESULTS_START_LINE -v SEP='\t' -v FREQ_COL="$RESULTS_FREQ_COL" -v FREQ_TEST=${freqarr[$freq]} -v RUN_COL="$RESULTS_RUN_COL" -v RUN_TEST=${runarr[$run]} -v BENCH_COL="$RESULTS_BENCH_COL" -v BENCH_TEST=${bencharr[$bench]} -v DATA_COL=${evavgarr[$colavg]} 'BEGIN{FS = SEP; OFMT = "%.0f"; DATA = 0}{ if (NR >= START && $FREQ_COL == FREQ_TEST && $RUN_COL == RUN_TEST && $BENCH_COL == BENCH_TEST){DATA+=$DATA_COL}}END{print DATA}' < "$RESULTS_FILE")
+					EVAVG=$(echo "scale=10; $EVTOT/$SAMPLECOUNT;" | bc | awk '{printf "%.10f", $0}') #use awk to print leading 0 since bc fucks up
+					#echo $EVAVG
+					LINEDATA="$LINEDATA\t$EVAVG"
+				done
+				for coltot in $(seq 0 $((${#evtotarr[@]}-1)) )
+				do 
+					EVTOT=$(awk -v START=$RESULTS_START_LINE -v SEP='\t' -v FREQ_COL="$RESULTS_FREQ_COL" -v FREQ_TEST=${freqarr[$freq]} -v RUN_COL="$RESULTS_RUN_COL" -v RUN_TEST=${runarr[$run]} -v BENCH_COL="$RESULTS_BENCH_COL" -v BENCH_TEST=${bencharr[$bench]} -v DATA_COL=${evtotarr[$coltot]} 'BEGIN{FS = SEP; OFMT = "%.0f"; DATA = 0}{ if (NR >= START && $FREQ_COL == FREQ_TEST && $RUN_COL == RUN_TEST && $BENCH_COL == BENCH_TEST){DATA+=$DATA_COL}}END{print DATA}' < "$RESULTS_FILE")
+					LINEDATA="$LINEDATA\t$EVTOT"
+				done
+				PROCDATA="$TIMESTAMP\t${bencharr[$bench]}\t${runarr[$run]}\t${freqarr[$freq]}\t$SAMPLECOUNT$LINEDATA"
+				if [[ -z $SAVE_FILE ]]; then 
+				    echo -e "$PROCDATA" >&1
+				else
+				    echo -e "$PROCDATA" >> "$SAVE_FILE"
+				fi
+		  		((TIMESTAMP++))
+			fi
+		done
+	done
 done
-for i in $(seq 1 "$EV_NUM")
-do
-    eval EV_$i=$(awk -v SEP='\t' -v START="$RESULTS_START_LINE" -v COL=$((CCYCLES_COLUMN-1+"$i")) 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-    (( $DBG )) && echo -e "EV_$i=""$(eval echo -e "\$EV_$i")"
-done
-((SAMPLES++))
-(( $DBG )) && echo -e "$BENCH_SELECT\t$RUN_SELECT\t$FREQ_SELECT"
-
-for LINE in $(seq $((RESULTS_START_LINE+1)) 1 "$(wc -l "$RESULTS_FILE" | awk '{print $1}')") 
-do
-    (( $DBG )) && echo "LINE=$LINE"
-    if [[ $(awk -v SEP='\t' -v START="$LINE" -v RUN_COL="$RESULTS_RUN_COL" -v RUN="$RUN_SELECT" -v FREQ_COL="$RESULTS_FREQ_COL" -v FREQ="$FREQ_SELECT" -v BENCH_COL="$RESULTS_BENCH_COL" -v BENCH="$BENCH_SELECT" 'BEGIN{FS=SEP}{if(NR==START && $BENCH_COL==BENCH && $FREQ_COL==FREQ && $RUN_COL==RUN){print 1;exit} }' < "$RESULTS_FILE") ]]; then
-        (( $DBG )) && echo "next lines"
-		(( $DBG )) && echo "Sensors:"
-        for i in $(seq 1 "$SENS_NUM")
-        do
-            SENS_val=$(eval echo -e "\$SENS_$i")
-            (( $DBG )) && echo "val="$SENS_val
-            SENS_new=$(awk -v SEP='\t' -v START="$LINE" -v COL=$((RESULTS_FREQ_COL+"$i")) 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-            (( $DBG )) && echo "new="$SENS_new
-            SENS_sum=$(echo "$SENS_val+$SENS_new;" | bc )
-            (( $DBG )) && echo "sum="$SENS_sum
-            eval SENS_$i="$SENS_sum"
-        done
-		(( $DBG )) && echo "Events:"
-        for i in $(seq 1 "$EV_NUM")
-        do
-            EV_val=$(eval echo -e "\$EV_$i")
-            (( $DBG )) && echo "val="$EV_val
-            EV_new=$(awk -v SEP='\t' -v START="$LINE" -v COL=$((CCYCLES_COLUMN-1+"$i"))  'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-            (( $DBG )) && echo "new="$EV_new
-            EV_sum=$(echo "$EV_val+$EV_new;" | bc )
-            (( $DBG )) && echo "sum="$EV_sum
-            eval EV_$i=$EV_sum
-        done
-        ((SAMPLES++))        
-    else
-        (( $DBG )) && echo "next data point"
-        (( $DBG )) && echo "sens1=$SENS_1"
-        (( $DBG )) && echo "samples=$SAMPLES"
-        SENS_avg=$(echo "scale=10; $SENS_1/$SAMPLES;" | bc | awk '{printf "%.10f", $0}') #use awk to print leading 0 since bc fucks up
-        (( $DBG )) && echo "sens1avg=$SENS_avg"
-        SENSORS_DATA="$SENS_avg"
-        #Output average of all samples and start next sampling point
-        for i in $(seq 2 "$SENS_NUM")
-        do
-            SENS_val=$(eval echo -e "\$SENS_$i")
-            (( $DBG )) && echo "sens$i=$SENS_val"
-            SENS_avg=$(echo "scale=10; $SENS_val/$SAMPLES;" | bc | awk '{printf "%.10f", $0}') #use awk to print leading 0 since bc fucks up
-            (( $DBG )) && echo "sens$i""avg=$SENS_avg"
-            SENSORS_DATA="$SENSORS_DATA\t$SENS_avg"
-        done
-        (( $DBG )) && echo "ev1=$EV_1"
-        EVENTS_DATA="$EV_1"        
-        for i in $(seq 2 "$EV_NUM")
-        do
-            EV_val=$(eval echo -e "\$EV_$i")
-            (( $DBG )) && echo "ev$i=$EV_val"
-            EVENTS_DATA="$EVENTS_DATA\t$EV_val"
-        done
-
-        #Output upscaled sample data
-        ((DATAPOINT++))
-        if [[ -z $SAVE_FILE ]]; then 
-	        echo -e "$DATAPOINT\t$BENCH_SELECT\t$RUN_SELECT\t$FREQ_SELECT\t$SENSORS_DATA\t$EVENTS_DATA" >&1
-        else
-            echo -e "$DATAPOINT\t$BENCH_SELECT\t$RUN_SELECT\t$FREQ_SELECT\t$SENSORS_DATA\t$EVENTS_DATA" >> "$SAVE_FILE"
-        fi
-
-        SAMPLES=0            
-        #Reset Samples and set for next benchmark
-        RUN_SELECT=$(awk -v SEP='\t' -v START="$LINE" -v COL="$RESULTS_RUN_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-        FREQ_SELECT=$(awk -v SEP='\t' -v START="$LINE" -v COL="$RESULTS_FREQ_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-        BENCH_SELECT=$(awk -v SEP='\t' -v START="$LINE" -v COL="$RESULTS_BENCH_COL" 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-        for i in $(seq 1 "$SENS_NUM")
-        do
-            eval SENS_$i=$(awk -v SEP='\t' -v START="$LINE" -v COL=$((RESULTS_FREQ_COL+"$i")) 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-            (( $DBG )) && echo -e "SENS_$i=""$(eval echo -e "\$SENS_$i")"
-        done
-        for i in $(seq 1 "$EV_NUM")
-        do
-            eval EV_$i=$(awk -v SEP='\t' -v START="$LINE" -v COL=$((CCYCLES_COLUMN-1+"$i")) 'BEGIN{FS=SEP}{if(NR==START){print $COL;exit} }' < "$RESULTS_FILE")
-            (( $DBG )) && echo -e "EV_$i=""$(eval echo -e "\$EV_$i")"
-        done
-        ((SAMPLES++))
-    fi
-done
-#Analyse last benchmark
-SENS_avg=$(echo "scale=10; $SENS_1/$SAMPLES;" | bc | awk '{printf "%.10f", $0}') #use awk to print leading 0 since bc fucks up
-SENSORS_DATA="$SENS_avg"
-#Output average of all samples and start next sampling point
-for i in $(seq 2 "$SENS_NUM")
-do
-    SENS_val=$(eval echo -e "\$SENS_$i")
-    SENS_avg=$(echo "scale=10; $SENS_val/$SAMPLES;" | bc | awk '{printf "%.10f", $0}') #use awk to print leading 0 since bc fucks up
-    SENSORS_DATA="$SENSORS_DATA\t$SENS_avg"
-done
-EVENTS_DATA="$EV_1"        
-for i in $(seq 2 "$EV_NUM")
-do
-    EV_val=$(eval echo -e "\$EV_$i")
-    EVENTS_DATA="$EVENTS_DATA\t$EV_val"
-done
-#Output upscaled sample data
-((DATAPOINT++))
-if [[ -z $SAVE_FILE ]]; then 
-    echo -e "$DATAPOINT\t$BENCH_SELECT\t$RUN_SELECT\t$FREQ_SELECT\t$SENSORS_DATA\t$EVENTS_DATA" >&1
-else
-    echo -e "$DATAPOINT\t$BENCH_SELECT\t$RUN_SELECT\t$FREQ_SELECT\t$SENSORS_DATA\t$EVENTS_DATA" >> "$SAVE_FILE"
-fi
 
 echo -e "===================="
 echo "Script Done! :)"
