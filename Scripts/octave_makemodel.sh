@@ -3261,7 +3261,7 @@ IFS=";" read -a model_coeff <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEG
 
 #Extract continuous model information
 if [[ $OUTPUT_MODE == 6 ]]; then
-    num_samples=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Total" && $2=="Number" && $3=="of" && $4=="Samples"){ print $6 }}' | tr "\n" ";" | head -c -1)
+    num_samples=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Total" && $2=="Number" && $3=="of" && $4=="Samples:"){ print $5 }}' | tr "\n" ";" | head -c -1)
     #echo $num_samples
     IFS=";" read -a sample_pred_regressand <<< $(echo -e "$octave_output" | awk -v SEP=' ' -v SAMPLES=$num_samples 'BEGIN{FS=SEP}{for(count=1;count<=SAMPLES;count++){if ($1==count){ print $2 }}}' | tr "\n" ";" | head -c -1)
     IFS=";" read -a sample_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' -v SAMPLES=$num_samples 'BEGIN{FS=SEP}{for(count=1;count<=SAMPLES;count++){if ($1==count){ print $3 }}}' | tr "\n" ";" | head -c -1)

@@ -8,6 +8,7 @@ import re
 import sys
 import getopt
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 # import matplotlib.patches as mpatches
@@ -37,6 +38,7 @@ from matplotlib import rc#, rcParams
 def main(argv):
 	plottype = 0
 	xlabel = ''
+	xticks=0
 	ylabel = ''
 	bfile = ''
 	blabel = ''
@@ -65,14 +67,14 @@ def main(argv):
 	my_dpi = 96
 
 	try:
-		opts, args = getopt.getopt(argv, "hp:x:y:b:l:i:a:o:", ["ptype=", "xlabel=", "ylabel=", "bfile=", "blabel=", "ifile=", "ilabel=", "ofile="])
+		opts, args = getopt.getopt(argv, "hp:x:t:y:b:l:i:a:o:", ["ptype=", "xlabel=", "xticks=", "ylabel=", "bfile=", "blabel=", "ifile=", "ilabel=", "ofile="])
 	except getopt.GetoptError:
 		print 'Error: use -h option to see usage!'
 		sys.exit(2)
 
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'Usage: -p <plot type> (currently only 1 type) -x <x axis label> -y <y axis label> -b <physical measurements benchmark file> -l <benchmark label> -i <model input file> -a <mode label> -o <output file>'
+			print 'Usage: -p <plot type> (currently only 1 type) -x <x axis label> -t <number of x ticks> -y <y axis label> -b <physical measurements benchmark file> -l <benchmark label> -i <model input file> -a <mode label> -o <output file>'
 			sys.exit(2)
 		elif opt in ("-p", "--ptype"):
 			if plottype != 0:
@@ -86,6 +88,12 @@ def main(argv):
 				sys.exit(2)
 			else:
 				xlabel = arg
+		elif opt in ("-t", "--xticks"):
+			if xticks != 0:
+				print 'Error in option <-t ' + arg + '>: -t flag has already been used! First usage is: <-t ' + str(xticks) + '>'
+				sys.exit(2)
+			else:
+				xticks = int(arg)
 		elif opt in ("-y", "--ylabel"):
 			if ylabel != '':
 				print 'Error in option <-y ' + arg + '>: -y flag has already been used! First usage is: <-y ' + ylabel + '>'
@@ -100,15 +108,15 @@ def main(argv):
 				try:
 					fileopentest = open(arg, 'r')
 					checkreadline = fileopentest.readline()
-					if (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\(A\)\tPower\(W\)\t", checkreadline)) or (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\(A\)\tPower\(W\)\tEnergy\(J\)\t", checkreadline)):
+					if (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\t", checkreadline)) or (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\tEnergy\[J\]\t", checkreadline)):
 						fileopentest.close()
 						bfile = arg
 					else:
 						print 'Error in option <-b ' + arg + '>: file <' + arg + '> is not the correct format or is empty. Please enter a valid input file.'
 						print 'The results file should start with the following header, followed by the data:'
-						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent(A)\tPower(W)\t*(EVENTS)'
+						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent[A]\tPower[W]\t*(EVENTS)'
 						print 'Or if Energy is computed, the following header:'
-						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent(A)\tPower(W)\tEnergy(J)\t*(EVENTS)'
+						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent[A]\tPower[W]\tEnergy[J]\t*(EVENTS)'
 						print 'NB: This script DOES NOT currently have a way to determine if the data format is correct so please use the proper data collection tool in order to not break the plots.'
 						fileopentest.close()
 						sys.exit(2)
@@ -130,19 +138,19 @@ def main(argv):
 					fileopentest.close()
 					sys.exit(2)
 				else:
-					if re.match(r"#Sample\[#\]\tPredicted Power \[W\]\tAbsolute Error \[W\]\tRelative Error \[%\]", checkreadline):
+					if re.match(r"#Sample\[#\]\tPredicted Power\[W\]\tAbsolute Error\[W\]\tRelative Error\[%\]", checkreadline):
 						fileopentest.close()
 						inputfile.append(arg)
-					elif re.match(r"#Sample\[#\]\tPredicted Energy \[J\]\tAbsolute Error \[J\]\tRelative Error \[%\]", checkreadline):
+					elif re.match(r"#Sample\[#\]\tPredicted Energy\[J\]\tAbsolute Error\[J\]\tRelative Error\[%\]", checkreadline):
 						fileopentest.close()
 						inputfile.append(arg)
 						energy_flag = 1
 					else:
 						print 'Error in option <-i ' + arg + '>: file <' + arg + '> is not the correct format or is empty. Please enter a valid input file.'
 						print 'The results file should start with the following header, followed by the data:'
-						print '#Sample[#]\tPredicted Power [W]\tAbsolute Error [W]\tRelative Error [%]'
+						print '#Sample[#]\tPredicted Power[W]\tAbsolute Error[W]\tRelative Error[%]'
 						print 'Or if Energy is computed, the following header:'
-						print '#Sample[#]\tPredicted Energy [J]\tAbsolute Error [J]\tRelative Error [%]'
+						print '#Sample[#]\tPredicted Energy[J]\tAbsolute Error[J]\tRelative Error[%]'
 						print 'NB: This script DOES NOT currently have a way to determine if the data format is correct so please use the proper data collection tool in order to not break the plots.'
 						fileopentest.close()
 						sys.exit(2)
@@ -186,6 +194,9 @@ def main(argv):
 	if xlabel == '':
 		print 'Please specify x axis label with option -x. Use -h for help.'
 		sys.exit(2)
+	if xticks == 0:
+		print 'Please specify number of x tics with option -t. Use -h for help.'
+		sys.exit(2)
 	if ylabel == '':
 		print 'Please specify y axis label with option -y. Use -h for help.'
 		sys.exit(2)
@@ -205,6 +216,7 @@ def main(argv):
 
 	print 'Plot type is ' + str(plottype)
 	print 'X Axis label is ' + xlabel
+	print 'X tick size is ' + str(xticks)
 	print 'Y Axis label is ' + ylabel
 	print 'Benchmark physical measurements file is ' + bfile
 	print 'Benchmark label is ' + blabel
@@ -213,6 +225,7 @@ def main(argv):
 	print 'Output file is ' + outputfile
 
 	#Data processing
+	sample_count=0
 	with open(bfile, 'r') as bfile_read:
 		for curline in bfile_read:
 			# check if the current linestarts with "#"
@@ -220,7 +233,9 @@ def main(argv):
 				if bfile_header == '':
 					bfile_header = curline
 			else:
-				sample.append(int(curline.split('\t')[0]))
+				#sample.append(int(curline.split('\t')[0]))
+				sample_count+=1
+				sample.append(sample_count)
 				if energy_flag == 1:
 					phys_value.append(float(curline.split('\t')[6]))
 				else:
@@ -260,7 +275,17 @@ def main(argv):
 		axs.set_xlim(1, len(sample))
 		#axs.set_ylim(bottom = 0.024)
 		#axs.set_ylim(top = 0.034)
-		sample_np = np.insert((sample_np[499::500]-min(sample)+1), 0, 1)
+
+		#Automatically colculate the clousest power of 10 to round to (for nice output). Then set the assigned number of xticks 
+		xticks_deccount=0
+		while True:
+			if (sample_np.size/(xticks-1)) > (10 ** xticks_deccount):
+				xticks_deccount+=1
+			else:
+				xticks_deccount-=2
+				break
+
+		sample_np = np.insert((sample_np[int(round(sample_np.size/(xticks-1),-xticks_deccount))-1::int(round(sample_np.size/(xticks-1),-xticks_deccount))]-min(sample)+1), 0, 1)
 		axs.set_xticks(sample_np)
 		axs.set_xticklabels(sample_np, fontsize='small', rotation='45')
 
@@ -268,7 +293,7 @@ def main(argv):
 		axs.set_ylabel(ylabel, fontweight='bold')
 
 		axshandles, dud = axs.get_legend_handles_labels()
-		axs.legend(handles=axshandles, loc=0)
+		axs.legend(handles=axshandles, loc=1)
 		axs.grid()
 
 		fig.tight_layout()
