@@ -15,13 +15,13 @@ if ( modeSel == 0 )
   disp("List of all the function modes:")
   disp("0) Mode information")
   disp("1) Platformm physical information including averages and totals of model events. No model generation.")
-  disp("Need to pass 6 arguments to load_build_model(mode,data_set,start_row,start_col,power_col,events_col)")
+  disp("Need to pass 6 arguments to load_build_model(mode,data_set,start_row,start_col,regressand_col,events_col)")
   disp("2) Model generation with detailed output.")
-  disp("Need to pass 8 arguments to load_build_model(modeSel,algoSel,train_set,test_set,start_row,start_col,power_col,events_col)")
+  disp("Need to pass 8 arguments to load_build_model(modeSel,algoSel,train_set,test_set,start_row,start_col,regressand_col,events_col)")
   disp("3) Cross-model generation with detailed output.")
-  disp("Need to pass 12 arguments to load_build_model(mode,algoSel,train_set_1,test_set_1,start_row_1,start_col_1,train_set_2,test_set_2,start_row_2,start_col_2,power_col,events_col)")
+  disp("Need to pass 12 arguments to load_build_model(mode,algoSel,train_set_1,test_set_1,start_row_1,start_col_1,train_set_2,test_set_2,start_row_2,start_col_2,regressand_col,events_col)")
   disp("4) Model generation with per-sample model performance.")
-  disp("Need to pass 8 arguments to load_build_model(mode,algoSel,train_set,test_set,start_row,start_col,power_col,events_col)")
+  disp("Need to pass 8 arguments to load_build_model(mode,algoSel,train_set,test_set,start_row,start_col,regressand_col,events_col)")
   return
 endif
 
@@ -38,7 +38,7 @@ if ( modeSel == 1 )
   data_set=varargin{2};
   start_row=varargin{3};
   start_col=varargin{4};
-  power_col=varargin{5};
+  regressand_col=varargin{5};
   events_col=varargin{6};
   
   %Open single data set file
@@ -47,14 +47,14 @@ if ( modeSel == 1 )
   fclose (fid);
   
   %Extract data
-  power=data_set(:,power_col.-start_col);
+  regressand=data_set(:,regressand_col.-start_col);
   evts=data_set(:,str2num(events_col).-start_col);
   
   disp("###########################################################");
   disp("Platform physical characteristics");
   disp("###########################################################");
-  disp(["Average Power [W]: " num2str(mean(power),"%.5f")]); 
-  disp(["Measured Power Range [%]: " num2str((range(power)./min(power))*100,"%d")]);
+  disp(["Average Regressand: " num2str(mean(regressand),"%.5f")]); 
+  disp(["Measured Regressand Range[%]: " num2str((range(regressand)./min(regressand))*100,"%d")]);
   disp("###########################################################");
   disp(["Data set event totals: " num2str(sum(evts),"%G\t")]);
   disp("###########################################################");
@@ -78,7 +78,7 @@ if (modeSel == 2)
   test_set=varargin{4};
   start_row=varargin{5};
   start_col=varargin{6};
-  power_col=varargin{7};
+  regressand_col=varargin{7};
   events_col=varargin{8};
   
   %Open train set file
@@ -91,10 +91,7 @@ if (modeSel == 2)
   train_reg=[ones(size(train_set,1),1),train_set(:,str2num(events_col).-start_col)]; 
 
   %Compute model
-  %[m] = build_model(train_reg,train_set(:,power_col.-start_col));
-  %[m,sigma,res2] = ols(train_set(:,power_col.-start_col),train_reg);
-  %m = lsqnonneg(train_reg,train_set(:,power_col.-start_col));
-  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
+  m = build_model(algSel,train_reg,train_set(:,regressand_col.-start_col));
   
   %Calculate regressor cross-correlation
   maxcorr=0.0;
@@ -126,44 +123,37 @@ if (modeSel == 2)
   %Events columns are same as train file
   test_reg=[ones(size(test_set,1),1),test_set(:,str2num(events_col).-start_col)];
 
-  %Extract measured power and range from test data
-  test_power=test_set(:,power_col.-start_col);
+  %Extract measured regressand and range from test data
+  test_regressand=test_set(:,regressand_col.-start_col);
 
-  %Compute predicted power using model and events
-  pred_power=(test_reg(:,:)*m);
-
-%  %Adjust model residual
-%  offset=mean(pred_power)-mean(test_power);    
-%  m(1,:)=m(1,:)-offset;
-%  
-%  %Recompute predicted power
-%  pred_power=(test_reg(:,:)*m);
+  %Compute predicted regressand using model and events
+  pred_regressand=(test_reg(:,:)*m);
  
   %Compute absolute model errors
-  err=(test_power-pred_power);
+  err=(test_regressand-pred_regressand);
   abs_err=abs(err);
   avg_abs_err=mean(abs_err);
   std_dev_err=std(abs_err,1);
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./test_power)*100;
+  rel_abs_err=abs(err./test_regressand)*100;
   rel_avg_abs_err=mean(rel_abs_err);
   rel_err_std_dev=std(rel_abs_err,1);
 
   disp("###########################################################");
   disp("Model validation against test set");
   disp("###########################################################"); 
-  disp(["Average Predicted Power [W]: " num2str(mean(pred_power),"%.5f")]);  
-  disp(["Predicted Power Range [%]: " num2str(abs((range(pred_power)./min(pred_power))*100),"%d")]);
+  disp(["Average Predicted Regressand: " num2str(mean(pred_regressand),"%.5f")]);  
+  disp(["Predicted Regressand Range[%]: " num2str(abs((range(pred_regressand)./min(pred_regressand))*100),"%d")]);
   disp("###########################################################"); 
-  disp(["Average Absolute Error [W]: " num2str(avg_abs_err,"%.5f")]);
-  disp(["Absolute Error Standart Deviation [W]: " num2str(std_dev_err,"%.5f")]);
+  disp(["Average Absolute Error: " num2str(avg_abs_err,"%.5f")]);
+  disp(["Absolute Error Standart Deviation: " num2str(std_dev_err,"%.5f")]);
   disp("###########################################################");
-  disp(["Average Relative Error [%]: " num2str(rel_avg_abs_err,"%.5f")]);
-  disp(["Relative Error Standart Deviation [%]: " num2str(rel_err_std_dev,"%.5f")]);
+  disp(["Average Relative Error[%]: " num2str(rel_avg_abs_err,"%.5f")]);
+  disp(["Relative Error Standart Deviation[%]: " num2str(rel_err_std_dev,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 
     disp("###########################################################");
-    disp(["Average Event Cross-Correlation [%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
-    disp(["Maximum Event Cross-Correlation [%]: " num2str((maxcorr/1.0)*100,"%.5f")]);
+    disp(["Average Event Cross-Correlation[%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
+    disp(["Maximum Event Cross-Correlation[%]: " num2str((maxcorr/1.0)*100,"%.5f")]);
     disp(["Most Cross-Correlated Events: " num2str(str2num(events_col)(maxcorrindices(1,1)),"%d") " and " num2str(str2num(events_col)(maxcorrindices(1,2)),"%d")]);
   endif
   disp("###########################################################");
@@ -194,10 +184,8 @@ if (modeSel == 3)
   start_row_2=varargin{9};
   start_col_2=varargin{10};
   
-  power_col=varargin{11};
+  regressand_col=varargin{11};
   events_col=varargin{12}
-  
-  
   
   %Extract train and test set for file 1
   fid = fopen (train_set_1, "r");
@@ -225,13 +213,11 @@ if (modeSel == 3)
 %  train_events_mean_2=mean(train_set_2(:,str2num(events_col(2:end)).-start_col_2),1);
 %  scaling_factors=[1,train_events_mean_2./train_events_mean_1];
   
-  
   %Extract train data from the second file
   train_reg=[ones(size(train_set_2,1),1),train_set_2(:,str2num(events_col).-start_col_2)];
   
   %Compute model for second core
-  %[m] = build_model(train_reg,train_set_2(:,power_col.-start_col_2));
-  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
+  m = build_model(algSel,train_reg,train_set_2(:,regressand_col.-start_col_2));
    
   %Calculate regressor cross-correlation
   maxcorr=0.0;
@@ -257,31 +243,31 @@ if (modeSel == 3)
   %Again extract test data from first file (first core) and scale events
   test_reg=[ones(size(test_set_1,1),1),test_set_1(:,str2num(events_col).-start_col_1).*scaling_factors];
 
-  %Extract measured power and range for second core
-  test_power=test_set_2(:,power_col.-start_col_2);
+  %Extract measured regressand and range for second core
+  test_regressand=test_set_2(:,regressand_col.-start_col_2);
 
-  %Compute predicted power using model and scaled events from first core
-  pred_power=test_reg(:,:)*m;
+  %Compute predicted regressand using model and scaled events from first core
+  pred_regressand=test_reg(:,:)*m;
 
   %Compute absolute model errors
-  err=(mean(test_power)-mean(pred_power));
+  err=(mean(test_regressand)-mean(pred_regressand));
   abs_err=abs(err);
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./mean(test_power))*100;
+  rel_abs_err=abs(err./mean(test_regressand))*100;
   
   disp("###########################################################");
   disp("Model validation against test set");
   disp("###########################################################"); 
-  disp(["Average Predicted Power [W]: " num2str(mean(pred_power),"%.5f")]); 
-  disp(["Predicted Power Range [%]: " num2str(abs((range(pred_power)./min(pred_power))*100),"%d")]);
+  disp(["Average Predicted Regressand: " num2str(mean(pred_regressand),"%.5f")]); 
+  disp(["Predicted Regressand Range[%]: " num2str(abs((range(pred_regressand)./min(pred_regressand))*100),"%d")]);
   disp("###########################################################"); 
-  disp(["Average Absolute Error [W]: " num2str(abs_err,"%.5f")]);
+  disp(["Average Absolute Error: " num2str(abs_err,"%.5f")]);
   disp("###########################################################");
-  disp(["Average Relative Error [%]: " num2str(rel_abs_err,"%.5f")]);
+  disp(["Average Relative Error[%]: " num2str(rel_abs_err,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 
     disp("###########################################################");
-    disp(["Average Event Cross-Correlation [%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
-    disp(["Maximum Event Cross-Correlation [%]: " num2str((maxcorr/1.0)*100,"%.5f")]);
+    disp(["Average Event Cross-Correlation[%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
+    disp(["Maximum Event Cross-Correlation[%]: " num2str((maxcorr/1.0)*100,"%.5f")]);
     disp(["Most Cross-Correlated Events: " num2str(str2num(events_col)(maxcorrindices(1,1)),"%d") " and " num2str(str2num(events_col)(maxcorrindices(1,2)),"%d")]);
   endif
   disp("###########################################################");
@@ -305,7 +291,7 @@ if (modeSel == 4)
   test_set=varargin{4};
   start_row=varargin{5};
   start_col=varargin{6};
-  power_col=varargin{7};
+  regressand_col=varargin{7};
   events_col=varargin{8};
   
   %Open train set file
@@ -318,8 +304,7 @@ if (modeSel == 4)
   train_reg=[ones(size(train_set,1),1),train_set(:,str2num(events_col).-start_col)]; 
 
   %Compute model
-  %m = build_model(train_reg,train_set(:,power_col.-start_col));
-  m = build_model(algSel,train_reg,train_set(:,power_col.-start_col));
+  m = build_model(algSel,train_reg,train_set(:,regressand_col.-start_col));
 
   %Calculate regressor cross-correlation
   maxcorr=0.0;
@@ -351,39 +336,33 @@ if (modeSel == 4)
   %Events columns are same as train file
   test_reg=[ones(size(test_set,1),1),test_set(:,str2num(events_col).-start_col)];
 
-  %Extract measured power and range from test data
-  test_power=test_set(:,power_col.-start_col);
+  %Extract measured regressand and range from test data
+  test_regressand=test_set(:,regressand_col.-start_col);
 
-  %Compute predicted power using model and events
-  pred_power=(test_reg(:,:)*m);
-
-%  %Use average power to compute energy  
-%  pred_temp=(pred_power(:,:).*(test_reg(:,3)./80000000));
-%  pred_power=pred_temp;
+  %Compute predicted regressand using model and events
+  pred_regressand=(test_reg(:,:)*m);
 
   %Compute absolute model errors
-  err=(test_power-pred_power);
+  err=(test_regressand-pred_regressand);
   abs_err=abs(err);
   avg_abs_err=mean(abs_err);
   std_dev_err=std(abs_err,1);
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./test_power)*100;
+  rel_abs_err=abs(err./test_regressand)*100;
   rel_avg_abs_err=mean(rel_abs_err);
   rel_err_std_dev=std(rel_abs_err,1);
   
   disp("###########################################################");
   disp("Model validation against test set");
   disp("###########################################################"); 
-  disp(["Average Predicted Power [W]: " num2str(mean(pred_power),"%.5f")]);
+  disp(["Average Predicted Regressand: " num2str(mean(pred_regressand),"%.5f")]);
   disp("###########################################################");
-  disp(["Total Number of Samples [W]: " num2str(size(pred_power,1),"%d")]);
+  disp(["Total Number of Samples: " num2str(size(pred_regressand,1),"%d")]);
   disp("###########################################################");
-  disp("Sample[#]\tPredicted Power [W]\tAbsolute Error [W]\tRelative Error [%]");
+  disp("Sample[#]\tPredicted Regressand\tAbsolute Error\tRelative Error[%]");
   disp("###########################################################");
-  %format short g
-  %output=horzcat([1:1:size(pred_power)]',pred_power,abs_err,rel_abs_err));
-  for sample = 1:size(pred_power,1)
-    disp([num2str(sample,"%d") "\t" num2str(pred_power(sample),"%.5f") "\t" num2str(abs_err(sample),"%.5f") "\t" num2str(rel_abs_err(sample),"%.5f")]);
+  for sample = 1:size(pred_regressand,1)
+    disp([num2str(sample,"%d") "\t" num2str(pred_regressand(sample),"%.5f") "\t" num2str(abs_err(sample),"%.5f") "\t" num2str(rel_abs_err(sample),"%.5f")]);
   endfor
   
 endif
