@@ -3229,7 +3229,7 @@ fi
 #Avg. Regressand
 IFS=";" read -a avg_regressand <<< $(echo -e "$octave_output" |awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Regressand:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Measured Regressand Range
-IFS=";" read -a pow_range <<< $(echo -e "$octave_output" |awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Measured" && $2=="Regressand" && $3=="Range[%]"){ print $4 }}' | tr "\n" ";" | head -c -1)
+IFS=";" read -a pow_range <<< $(echo -e "$octave_output" |awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Measured" && $2=="Regressand" && $3=="Range[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Event totals
 IFS=";" read -a event_totals <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($3=="event" && $4=="totals:"){ print substr($0, index($0,$5)) }}' | tr "\n" ";" | head -c -1)
 #Event totals
@@ -3239,11 +3239,11 @@ IFS=";" read -a event_averages <<< $(echo -e "$octave_output" | awk -v SEP=' ' '
 #Average Pred. Regressand
 IFS=";" read -a avg_pred_regressand <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Pred. Regressand Range
-IFS=";" read -a pred_regressand_range <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Predicted" && $2=="Regressand" && $3=="Range[%]"){ print $4 }}' | tr "\n" ";" | head -c -1)
+IFS=";" read -a pred_regressand_range <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Predicted" && $2=="Regressand" && $3=="Range[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Avg. Abs. Error
 IFS=";" read -a avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Absolute" && $3=="Error:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Abs. Err. Std. Dev.
-[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a std_dev_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Absolute" && $2=="Error" && $3=="Standart" && $4=="Deviation"){ print $6 }}' | tr "\n" ";" | head -c -1)
+[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a std_dev_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Absolute" && $2=="Error" && $3=="Standart" && $4=="Deviation:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Avg. Rel. Error
 IFS=";" read -a rel_avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Rel. Err. Std. Dev

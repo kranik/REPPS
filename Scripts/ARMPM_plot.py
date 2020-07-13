@@ -276,16 +276,23 @@ def main(argv):
 		#axs.set_ylim(bottom = 0.024)
 		#axs.set_ylim(top = 0.034)
 
-		#Automatically colculate the clousest power of 10 to round to (for nice output). Then set the assigned number of xticks 
-		xticks_deccount=0
-		while True:
-			if (sample_np.size/(xticks-1)) > (10 ** xticks_deccount):
-				xticks_deccount+=1
-			else:
-				xticks_deccount-=2
-				break
+		#Automatically colculate the closest power of 10 to round to (for nice output). Then set the assigned number of xticks 
+		#xticks_deccount=0
+		#while True:
+		#	if (sample_np.size/(xticks-1)) > (10 ** xticks_deccount):
+		#		xticks_deccount+=1
+		#	else:
+		#		xticks_deccount-=2
+		#		break
 
-		sample_np = np.insert((sample_np[int(round(sample_np.size/(xticks-1),-xticks_deccount))-1::int(round(sample_np.size/(xticks-1),-xticks_deccount))]-min(sample)+1), 0, 1)
+		#sample_np = np.insert((sample_np[int(round(sample_np.size/(xticks-1),-xticks_deccount))-1::int(round(sample_np.size/(xticks-1),-xticks_deccount))]-min(sample)+1), 0, 1)
+		
+		sample_np = np.insert((sample_np[int((sample_np.size-min(sample)+1)/(xticks-1))::int((sample_np.size-min(sample)+1)/(xticks-1))]-min(sample)+1), 0, 1)
+		if sample_np.size == xticks:
+			sample_np[sample_np.size-1] = len(sample)
+		else:
+			sample_np = np.append(sample_np,len(sample))
+		
 		axs.set_xticks(sample_np)
 		axs.set_xticklabels(sample_np, fontsize='small', rotation='45')
 
