@@ -554,9 +554,10 @@ if [[ -e "$BENCH_FILE" ]]; then
 	do
 		#containsElement "$FREQ_SELECT" "${FREQ_LIST[@]}"
 		if [[ ! " ${BENCH_LIST[@]} " =~ " ${TRAIN_SET[$count]} " ]]; then
+			echo "cic"
 			echo "Specified train benchmark ${TRAIN_SET[$count]} for -b is not present in result file."
 			echo -e "===================="
-	       	 	exit 1
+       	 	exit 1
 		fi
 	done
 	if [[ -n $TEST_FILE ]]; then
@@ -575,9 +576,10 @@ if [[ -e "$BENCH_FILE" ]]; then
 		do
 			#containsElement "$FREQ_SELECT" "${FREQ_LIST[@]}"
 			if [[ ! " ${BENCH_LIST[@]} " =~ " ${TEST_SET[$count]} " ]]; then
+				echo ""
 				echo "Specified test benchmark ${TEST_SET[$count]} for -b is not present in result file."
 				echo -e "===================="
-		       	 	exit 1
+	       	 	exit 1
 			fi
 		done
 	fi
@@ -1286,7 +1288,7 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 					awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_2_$seed.data"
 
 					#Collect octave output this depends on program mode
-					octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
+					octave_output=$(octave --silent --eval "load_build_model(3,1,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
 					#Cleanup
 					rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"	
 					data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
@@ -1301,7 +1303,7 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 					else
 						awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 					fi
-					octave_output=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
+					octave_output=$(octave --silent --eval "load_build_model(2,1,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
 					rm "train_set_$seed.data" "test_set_$seed.data"
 					data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
 				fi	
@@ -1328,7 +1330,7 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v FREQ_COL="$RESULT_FREQ_COL" -v FREQ="${CROSS_FREQ_LIST[$cross_count]}" -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START && $FREQ_COL == FREQ){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_1_$seed.data"
 								awk -v START="$TEST_START_LINE" -v SEP='\t' -v FREQ_COL="$TEST_FREQ_COL" -v FREQ="${FREQ_LIST[$count]}" -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${TRAIN_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START && $FREQ_COL == FREQ){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "train_set_2_$seed.data"
 								awk -v START="$TEST_START_LINE" -v SEP='\t' -v FREQ_COL="$TEST_FREQ_COL" -v FREQ="${FREQ_LIST[$count]}" -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START && $FREQ_COL == FREQ){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_2_$seed.data"
-								cross_octave_output+=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
+								cross_octave_output+=$(octave --silent --eval "load_build_model(3,1,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
 								#Cleanup
 								rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
 							done
@@ -1345,7 +1347,10 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 						else
 							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v FREQ_COL="$RESULT_FREQ_COL" -v FREQ="${FREQ_LIST[$count]}" -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START && $FREQ_COL == FREQ){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data"
 						fi
-						octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
+						#echo "load_build_model(2,1,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')"
+						#exit
+
+						octave_output+=$(octave --silent --eval "load_build_model(2,1,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
 						#Cleanup
 						rm "train_set_$seed.data" "test_set_$seed.data"
 					fi
@@ -1360,9 +1365,9 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 		fi
 		#Analyse collected results
 		#Avg. Rel. Error
-		IFS=";" read -a rel_avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}'%] | tr "\n" ";" | head -c -1)
+		IFS=";" read -a rel_avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Check for bad events
-		if [[ " ${rel_avg_abs_err[@]} " =~ " Inf " ]]; then
+		if [[ " ${rel_avg_abs_err[@]} " =~ " Inf " || " ${rel_avg_abs_err[@]} " =~ " NaN " ]]; then
 			#If relative error contains infinity then event is bad for linear regression as is removed from list
 			EVENTS_POOL=$(echo "$EVENTS_POOL" | sed "s/^$EV_TEMP,//g;s/,$EV_TEMP,/,/g;s/,$EV_TEMP$//g;s/^$EV_TEMP$//g")
 			EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
