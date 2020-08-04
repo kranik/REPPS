@@ -1549,7 +1549,7 @@ do
 					    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
 					   		do
 						    		echo -e "--------------------" >&1
-							  	echo "Validating on fold $(($train_set_folds_search+1)) -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+							  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
 								IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
 							  	train_nfolds=()
 								for bench_search in "${TRAIN_SET[@]}"; do
@@ -1881,7 +1881,7 @@ do
 				    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
 				   		do
 					    		echo -e "--------------------" >&1
-						  	echo "Validating on fold $(($train_set_folds_search+1)) -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+						  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
 							IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
 						  	train_nfolds=()
 							for bench_search in "${TRAIN_SET[@]}"; do
@@ -2122,7 +2122,7 @@ do
 					    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
 					   		do
 						    		echo -e "--------------------" >&1
-							  	echo "Validating on fold $(($train_set_folds_search+1)) -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+							  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
 								IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
 							  	train_nfolds=()
 								for bench_search in "${TRAIN_SET[@]}"; do
@@ -2334,7 +2334,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 		[[ -n $EVENTS_LIST ]] && EVENTS_LIST_TEMP=$(echo "$EVENTS_LIST,${EVENTS_LIST_COMBINATIONS[$i]}" | tr " " ",") || EVENTS_LIST_TEMP=$(echo "${EVENTS_LIST_COMBINATIONS[$i]}" | tr " " ",")
 		EVENTS_LIST_TEMP_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST_TEMP" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo -e "********************" >&1
-		echo "Checking combination events list number -> $((i+1)):"
+		echo "Checking combination events list number -> $((i+1))/${#EVENTS_LIST_COMBINATIONS[@]}:"
 		echo -e "$EVENTS_LIST_TEMP -> $EVENTS_LIST_TEMP_LABELS" >&1
 		#Uses temporary files generated for extracting the train and test set. Array indexing starts at 1 in awk.
 		#Also uses the extracted benchmark set files to pass arguments in octave since I found that to be the easiest way and quickest for bug checking.
@@ -2454,7 +2454,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
 					   		do
 						    		echo -e "--------------------" >&1
-							  	echo "Validating on fold $(($train_set_folds_search+1)) -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+							  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
 								IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
 							  	train_nfolds=()
 								for bench_search in "${TRAIN_SET[@]}"; do
@@ -2656,7 +2656,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 			[[ -n $EVENTS_LIST ]] && EVENTS_LIST_TEMP=$(echo "$EVENTS_LIST,${EVENTS_LIST_COMBINATIONS[$i]}" | tr " " ",") || EVENTS_LIST_TEMP=$(echo "${EVENTS_LIST_COMBINATIONS[$i]}" | tr " " ",")
 			EVENTS_LIST_TEMP_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST_TEMP" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 			echo -e "********************" >&1
-			echo "Checking combination events list number -> $((i+1)):"
+			echo "Checking combination events list number -> $((i+1))/${#EVENTS_LIST_COMBINATIONS[@]}:"
 			echo -e "$EVENTS_LIST_TEMP -> $EVENTS_LIST_TEMP_LABELS" >&1
 			#Uses temporary files generated for extracting the train and test set. Array indexing starts at 1 in awk.
 			#Also uses the extracted benchmark set files to pass arguments in octave since I found that to be the easiest way and quickest for bug checking.
@@ -2686,7 +2686,88 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						octave_output+="###########################################################\n"
 						#Cleanup
 						rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
+					elif [[ -n $KFOLDS_NUM  ]]; then
+    						#Add n-folds here then average and add to octave_output
+						echo -e "********************" >&1
+						echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
+						unset -v nfolds_data_count
+						unset -v octave_output
+						while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
+						do
+							unset -v nfolds_octave_output
+					    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
+					   		do
+						    		echo -e "--------------------" >&1
+							  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+								IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
+							  	train_nfolds=()
+								for bench_search in "${TRAIN_SET[@]}"; do
+						    			for bench_test in "${test_nfolds[@]}"; do
+								   		TRAIN=true
+									   	if [[ ${bench_search} == ${bench_test} ]]; then
+								  			TRAIN=false
+										  	break
+									  	fi
+								    	done
+								    	if ${TRAIN}; then
+								   		train_nfolds+=(${bench_search})
+								    	fi
+								done
+								#echo "${train_nfolds[*]}" | tr " " ","
+							   	seed=$RANDOM
+								touch "train_set_$seed.data" "test_set_$seed.data"
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
+								if [[ -n $TEST_FILE ]]; then
+									awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
+								else
+									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
+								fi
+								#echo "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')"
+								#exit
+								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
+								rm "train_set_$seed.data" "test_set_$seed.data"
+			    				done
+							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+						done
+			           	echo -e "********************" >&1
+	                   		#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
+						#Analyse collected results
+						#Avg. Pred. Regressand
+						IFS=";" read -a nfolds_avg_pred_regressand <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						#Avg. Rel. Error
+						IFS=";" read -a nfolds_rel_avg_abs_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						#Avg Ev. Cross. Corr.
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						#Max Ev. Cross. Corr.
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						#Max Ev. Cross. Corr. EV1 
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev1 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						#Max Ev. Cross. Corr. EV2
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev2 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
+
+						#Average and prepare outputs
+						NFOLDS_MEAN_AVG_PRED_POW=$(getMean nfolds_avg_pred_regressand ${#nfolds_avg_pred_regressand[@]} )
+						NFOLDS_MEAN_REL_AVG_ABS_ERR=$(getMean nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+						NFOLDS_REL_AVG_ABS_ERR_STD_DEV=$(getStdDev nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MEAN_AVG_EV_NFOLDS_CORR=$(getMean nfolds_avg_ev_nfolds_corr ${#nfolds_avg_ev_nfolds_corr[@]} )
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
+						#Output processed event averages for each main core frequency
+						octave_output+="###########################################################\n"
+						octave_output+="Model validation against test set\n"
+						octave_output+="###########################################################\n"
+						octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
+						octave_output+="###########################################################\n"
+						octave_output+="Average Relative Error[%]: $NFOLDS_MEAN_REL_AVG_ABS_ERR\n"
+						octave_output+="Relative Error Standart Deviation[%]: $NFOLDS_REL_AVG_ABS_ERR_STD_DEV\n"
+						octave_output+="###########################################################\n"
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Most Cross-Correlated Events: ${nfolds_max_ev_nfolds_corr_ev1[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]} and ${nfolds_max_ev_nfolds_corr_ev2[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}\n"
+						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="###########################################################\n"
 					else
+						#If no k-folds cross-valudation then just use full train set to validate events	(1 fold)
 						#If all freqeuncy model then use all freqeuncies in octave, as in use the fully populated train and test set files
 						#Split data and collect output, then cleanup
 						seed=$RANDOM
@@ -2776,7 +2857,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
 						   		do
 							    		echo -e "--------------------" >&1
-								  	echo "Validating on fold $(($train_set_folds_search+1)) -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+								  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
 									IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
 								  	train_nfolds=()
 									for bench_search in "${TRAIN_SET[@]}"; do
