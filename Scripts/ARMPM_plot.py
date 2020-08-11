@@ -40,6 +40,7 @@ def main(argv):
 	xlabel = ''
 	xticks=0
 	ylabel = ''
+	legendloc=-1
 	bfile = ''
 	blabel = ''
 	inputfile = [] #use array for input file
@@ -67,7 +68,7 @@ def main(argv):
 	my_dpi = 96
 
 	try:
-		opts, args = getopt.getopt(argv, "hp:x:t:y:b:l:i:a:o:", ["ptype=", "xlabel=", "xticks=", "ylabel=", "bfile=", "blabel=", "ifile=", "ilabel=", "ofile="])
+		opts, args = getopt.getopt(argv, "hp:x:t:y:e:b:l:i:a:o:", ["ptype=", "xlabel=", "xticks=", "ylabel=", "legendloc=", "bfile=", "blabel=", "ifile=", "ilabel=", "ofile="])
 	except getopt.GetoptError:
 		print 'Error: use -h option to see usage!'
 		sys.exit(2)
@@ -100,6 +101,16 @@ def main(argv):
 				sys.exit(2)
 			else:
 				ylabel = arg
+		elif opt in ("-e", "--legendloc"):
+			if legendloc != -1:
+				print 'Error in option <-e ' + arg + '>: -e flag has already been used! First usage is: <-e ' + str(legendloc) + '>'
+				sys.exit(2)
+			else:
+				try:
+					legendloc = int(arg)
+				except ValueError, exp:
+					print 'Error in option <-e ' + arg + '>: <' + arg + '> is not an integer. Please enter a valid input.'
+					sys.exit(2)
 		elif opt in ("-b", "--bfile"):
 			if bfile != '':
 				print 'Error in option <-b ' + arg + '>: -b flag has already been used! First usage is: <-b ' + bfile + '>'
@@ -214,10 +225,15 @@ def main(argv):
 		print 'Error in options <-i>: model input file and <-a>: model input label. Please use a label for every model. Number of models is <' + str(len(inputfile)) + '> and number of labels is <' + str(len(inputlabel)) + '>.'
 		sys.exit(2)
 
+	if legendloc == -1:
+		print 'No legend location specified. Using default value of 0(auto).'
+		legendloc = int(0)
+
 	print 'Plot type is ' + str(plottype)
 	print 'X Axis label is ' + xlabel
 	print 'X tick size is ' + str(xticks)
 	print 'Y Axis label is ' + ylabel
+	print 'Legend location is ' + str(legendloc)
 	print 'Benchmark physical measurements file is ' + bfile
 	print 'Benchmark label is ' + blabel
 	print 'Model input file is ' + str(inputfile)[1:-1]
@@ -300,7 +316,8 @@ def main(argv):
 		axs.set_ylabel(ylabel, fontweight='bold')
 
 		axshandles, dud = axs.get_legend_handles_labels()
-		axs.legend(handles=axshandles, loc=1)
+		#loc is 0 by default otherwise set by user
+		axs.legend(handles=axshandles, loc=legendloc)
 		axs.grid()
 
 		fig.tight_layout()

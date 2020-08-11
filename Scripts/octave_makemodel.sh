@@ -1795,7 +1795,86 @@ do
 				octave_output+="###########################################################\n"
 				#Cleanup
 				rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
+			elif [[ -n $KFOLDS_NUM  ]]; then
+				#Add n-folds here then average and add to octave_output
+				echo -e "********************" >&1
+				echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
+				unset -v nfolds_data_count
+				unset -v octave_output
+				while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
+				do
+					unset -v nfolds_octave_output
+			    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
+			   		do
+				    		echo -e "--------------------" >&1
+					  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+						IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
+					  	train_nfolds=()
+						for bench_search in "${TRAIN_SET[@]}"; do
+				    			for bench_test in "${test_nfolds[@]}"; do
+						   		TRAIN=true
+							   	if [[ ${bench_search} == ${bench_test} ]]; then
+						  			TRAIN=false
+								  	break
+							  	fi
+						    	done
+						    	if ${TRAIN}; then
+						   		train_nfolds+=(${bench_search})
+						    	fi
+						done
+						#echo "${train_nfolds[*]}" | tr " " ","
+					   	seed=$RANDOM
+						touch "train_set_$seed.data" "test_set_$seed.data"
+						awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
+						if [[ -n $TEST_FILE ]]; then
+							awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
+						else
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
+						fi
+						nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
+						rm "train_set_$seed.data" "test_set_$seed.data"
+	    				done
+					nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+				done
+	           	echo -e "********************" >&1
+              		#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
+				#Analyse collected results
+				#Avg. Pred. Regressand
+				IFS=";" read -a nfolds_avg_pred_regressand <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				#Avg. Rel. Error
+				IFS=";" read -a nfolds_rel_avg_abs_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				#Avg Ev. Cross. Corr.
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				#Max Ev. Cross. Corr.
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				#Max Ev. Cross. Corr. EV1 
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev1 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				#Max Ev. Cross. Corr. EV2
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev2 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
+
+				#Average and prepare outputs
+				NFOLDS_MEAN_AVG_PRED_POW=$(getMean nfolds_avg_pred_regressand ${#nfolds_avg_pred_regressand[@]} )
+				NFOLDS_MEAN_REL_AVG_ABS_ERR=$(getMean nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+				NFOLDS_REL_AVG_ABS_ERR_STD_DEV=$(getStdDev nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MEAN_AVG_EV_NFOLDS_CORR=$(getMean nfolds_avg_ev_nfolds_corr ${#nfolds_avg_ev_nfolds_corr[@]} )
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
+				#Output processed event averages for each main core frequency
+				octave_output+="###########################################################\n"
+				octave_output+="Model validation against test set\n"
+				octave_output+="###########################################################\n"
+				octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
+				octave_output+="###########################################################\n"
+				octave_output+="Average Relative Error[%]: $NFOLDS_MEAN_REL_AVG_ABS_ERR\n"
+				octave_output+="Relative Error Standart Deviation[%]: $NFOLDS_REL_AVG_ABS_ERR_STD_DEV\n"
+				octave_output+="###########################################################\n"
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Most Cross-Correlated Events: ${nfolds_max_ev_nfolds_corr_ev1[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]} and ${nfolds_max_ev_nfolds_corr_ev2[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}\n"
+				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="###########################################################\n"
 			else
+				#If no k-folds cross-valudation then just use full train set to validate events	(1 fold)
 				seed=$RANDOM
 				touch "train_set_$seed.data" "test_set_$seed.data"
 				awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TRAIN_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
@@ -1815,6 +1894,8 @@ do
 			unset -v octave_output				
 			for count in $(seq 0 $((${#FREQ_LIST[@]}-1)))
 			do
+				echo -e "********************" >&1
+				echo "Building model for FREQ: ${FREQ_LIST[$count]} $(($count+1))/${#FREQ_LIST[@]}"
 				if [[ -n $CM_MODE ]]; then
 					unset -v cross_data_count
 					while [[ $cross_data_count -ne ${#CROSS_FREQ_LIST[@]} ]]
@@ -1905,6 +1986,8 @@ do
 		    					rm "train_set_$seed.data" "test_set_$seed.data"	    					
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+				    		echo -e "--------------------" >&1
+						echo "Completed folds: $nfolds_data_count/${#TRAIN_SET_FOLDS[@]}"
 					done
 	                	echo -e "********************" >&1
                    		#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -1956,6 +2039,8 @@ do
 				fi
 			done
 			data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
+			echo -e "********************" >&1
+			echo "Completed freq: $data_count/${#FREQ_LIST[@]}"
 		done	
 	fi
 	#Analyse collected results
@@ -2036,7 +2121,86 @@ do
 					octave_output+="###########################################################\n"
 					#Cleanup
 					rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
+				elif [[ -n $KFOLDS_NUM  ]]; then
+					#Add n-folds here then average and add to octave_output
+					echo -e "********************" >&1
+					echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
+					unset -v nfolds_data_count
+					unset -v octave_output
+					while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
+					do
+						unset -v nfolds_octave_output
+				    		for train_set_folds_search in ${!TRAIN_SET_FOLDS[*]}
+				   		do
+					    		echo -e "--------------------" >&1
+						  	echo "Validating on fold $(($train_set_folds_search+1))/$KFOLDS_NUM -> ${TRAIN_SET_FOLDS[$train_set_folds_search]}"
+							IFS="," read -a test_nfolds <<< $(echo ${TRAIN_SET_FOLDS[$train_set_folds_search]})
+						  	train_nfolds=()
+							for bench_search in "${TRAIN_SET[@]}"; do
+					    			for bench_test in "${test_nfolds[@]}"; do
+							   		TRAIN=true
+								   	if [[ ${bench_search} == ${bench_test} ]]; then
+							  			TRAIN=false
+									  	break
+								  	fi
+							    	done
+							    	if ${TRAIN}; then
+							   		train_nfolds+=(${bench_search})
+							    	fi
+							done
+							#echo "${train_nfolds[*]}" | tr " " ","
+						   	seed=$RANDOM
+							touch "train_set_$seed.data" "test_set_$seed.data"
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
+							if [[ -n $TEST_FILE ]]; then
+								awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
+							else
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
+							fi
+							nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
+							rm "train_set_$seed.data" "test_set_$seed.data"
+		    				done
+						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+					done
+		           	echo -e "********************" >&1
+                   		#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
+					#Analyse collected results
+					#Avg. Pred. Regressand
+					IFS=";" read -a nfolds_avg_pred_regressand <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					#Avg. Rel. Error
+					IFS=";" read -a nfolds_rel_avg_abs_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					#Avg Ev. Cross. Corr.
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					#Max Ev. Cross. Corr.
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					#Max Ev. Cross. Corr. EV1 
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev1 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					#Max Ev. Cross. Corr. EV2
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_max_ev_nfolds_corr_ev2 <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
+
+					#Average and prepare outputs
+					NFOLDS_MEAN_AVG_PRED_POW=$(getMean nfolds_avg_pred_regressand ${#nfolds_avg_pred_regressand[@]} )
+					NFOLDS_MEAN_REL_AVG_ABS_ERR=$(getMean nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+					NFOLDS_REL_AVG_ABS_ERR_STD_DEV=$(getStdDev nfolds_rel_avg_abs_err ${#nfolds_rel_avg_abs_err[@]} )
+
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MEAN_AVG_EV_NFOLDS_CORR=$(getMean nfolds_avg_ev_nfolds_corr ${#nfolds_avg_ev_nfolds_corr[@]} )
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
+					#Output processed event averages for each main core frequency
+					octave_output+="###########################################################\n"
+					octave_output+="Model validation against test set\n"
+					octave_output+="###########################################################\n"
+					octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
+					octave_output+="###########################################################\n"
+					octave_output+="Average Relative Error[%]: $NFOLDS_MEAN_REL_AVG_ABS_ERR\n"
+					octave_output+="Relative Error Standart Deviation[%]: $NFOLDS_REL_AVG_ABS_ERR_STD_DEV\n"
+					octave_output+="###########################################################\n"
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Most Cross-Correlated Events: ${nfolds_max_ev_nfolds_corr_ev1[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]} and ${nfolds_max_ev_nfolds_corr_ev2[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}\n"
+					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="###########################################################\n"
 				else
+					#If no k-folds cross-valudation then just use full train set to validate events	(1 fold)
 					seed=$RANDOM
 					touch "train_set_$seed.data" "test_set_$seed.data"
 					awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TRAIN_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
@@ -2056,6 +2220,8 @@ do
 				unset -v octave_output				
 				for count in $(seq 0 $((${#FREQ_LIST[@]}-1)))
 				do
+					echo -e "********************" >&1
+					echo "Building model for FREQ: ${FREQ_LIST[$count]} $(($count+1))/${#FREQ_LIST[@]}"
 					if [[ -n $CM_MODE ]]; then
 						unset -v cross_data_count
 						while [[ $cross_data_count -ne ${#CROSS_FREQ_LIST[@]} ]]
@@ -2146,6 +2312,8 @@ do
 			    					rm "train_set_$seed.data" "test_set_$seed.data"	    					
 			    				done
 							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+					    		echo -e "--------------------" >&1
+							echo "Completed folds: $nfolds_data_count/${#TRAIN_SET_FOLDS[@]}"
 						done
 		                	echo -e "********************" >&1
                         		#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2197,6 +2365,8 @@ do
 					fi
 				done
 				data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
+				echo -e "********************" >&1
+				echo "Completed freq: $data_count/${#FREQ_LIST[@]}"
 			done	
 		fi
 		#Analyse collected results
@@ -2722,8 +2892,6 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 								else
 									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 								fi
-								#echo "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')"
-								#exit
 								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 								rm "train_set_$seed.data" "test_set_$seed.data"
 			    				done
@@ -3367,11 +3535,11 @@ case $OUTPUT_MODE in
 	2)
 		if [[ -z $CM_MODE || -z $ALL_FREQUENCY ]]; then
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
-				HEADER="Average Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
-				DATA="\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}\t\${model_coeff[\$i]}"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
+				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}\t\${model_coeff[\$i]}"
 			else
-				HEADER="Average Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tModel coefficients"
-				DATA="\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${model_coeff[\$i]}"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tModel coefficients"
+				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${model_coeff[\$i]}"
 			fi			
 		else
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
