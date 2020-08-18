@@ -82,7 +82,14 @@ def main(argv):
 				print 'Error in option <-p ' + arg + '>: -p flag has already been used! First usage is: <-p ' + str(plottype) + '>'
 				sys.exit(2)
 			else:
-				plottype = int(arg)
+				try:
+					plottype = int(arg)
+					if plottype != 1:
+						print 'Error in option <-p ' + arg + '>: <' + arg + '> is out of bounds. Please enter a valid ploy type <1>.'
+						sys.exit(2)
+				except ValueError, exp:
+					print 'Error in option <-p ' + arg + '>: <' + arg + '> is not an integer. Please enter a valid input.'
+					sys.exit(2)
 		elif opt in ("-x", "--xlabel"):
 			if xlabel != '':
 				print 'Error in option <-x ' + arg + '>: -x flag has already been used! First usage is: <-x ' + xlabel + '>'
@@ -94,7 +101,11 @@ def main(argv):
 				print 'Error in option <-t ' + arg + '>: -t flag has already been used! First usage is: <-t ' + str(xticks) + '>'
 				sys.exit(2)
 			else:
-				xticks = int(arg)
+				try:
+					xticks = int(arg)
+				except ValueError, exp:
+					print 'Error in option <-t ' + arg + '>: <' + arg + '> is not an integer. Please enter a valid input.'
+					sys.exit(2)
 		elif opt in ("-y", "--ylabel"):
 			if ylabel != '':
 				print 'Error in option <-y ' + arg + '>: -y flag has already been used! First usage is: <-y ' + ylabel + '>'
