@@ -1351,6 +1351,7 @@ if [[ -n $CONST_EV_CHECK && -n $AUTO_SEARCH ]];then
 						#exit
 
 						octave_output+=$(octave --silent --eval "load_build_model(2,1,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EV_TEMP')" 2> /dev/null)
+						
 						#Cleanup
 						rm "train_set_$seed.data" "test_set_$seed.data"
 					fi
@@ -1526,6 +1527,7 @@ do
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 					#Output processed event averages for each main core frequency
+					echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 					octave_output+="###########################################################\n"
 					octave_output+="Model validation against test set\n"
 					octave_output+="###########################################################\n"
@@ -1622,7 +1624,6 @@ do
 						echo -e "********************" >&1
 						echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
 						unset -v nfolds_data_count
-						unset -v octave_output
 						while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
 						do
 							unset -v nfolds_octave_output
@@ -1683,6 +1684,7 @@ do
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 						#Output processed event averages for each main core frequency
+						echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 						octave_output+="###########################################################\n"
 						octave_output+="Model validation against test set\n"
 						octave_output+="###########################################################\n"
@@ -1946,6 +1948,7 @@ do
 				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 				#Output processed event averages for each main core frequency
+				echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 				octave_output+="###########################################################\n"
 				octave_output+="Model validation against test set\n"
 				octave_output+="###########################################################\n"
@@ -2041,7 +2044,6 @@ do
 					echo -e "********************" >&1
 					echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
 					unset -v nfolds_data_count
-					unset -v octave_output
 					while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
 					do
 						unset -v nfolds_octave_output
@@ -2076,6 +2078,8 @@ do
 							rm "train_set_$seed.data" "test_set_$seed.data"
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+						echo -e "--------------------" >&1
+						echo "Completed folds: $nfolds_data_count/${#TRAIN_SET_FOLDS[@]}"
 					done
 			      	echo -e "********************" >&1
 					#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2102,6 +2106,7 @@ do
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 					#Output processed event averages for each main core frequency
+					echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 					octave_output+="###########################################################\n"
 					octave_output+="Model validation against test set\n"
 					octave_output+="###########################################################\n"
@@ -2130,7 +2135,7 @@ do
 			done
 			data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
 			echo -e "********************" >&1
-			echo "Completed freq: $data_count/${#FREQ_LIST[@]}"
+			echo "Completed frequencies: $data_count/${#FREQ_LIST[@]}"
 		done	
 	fi
 	#Analyse collected results
@@ -2277,6 +2282,7 @@ do
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 					#Output processed event averages for each main core frequency
+					echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 					octave_output+="###########################################################\n"
 					octave_output+="Model validation against test set\n"
 					octave_output+="###########################################################\n"
@@ -2372,7 +2378,6 @@ do
 						echo -e "********************" >&1
 						echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
 						unset -v nfolds_data_count
-						unset -v octave_output
 						while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
 						do
 							unset -v nfolds_octave_output
@@ -2433,6 +2438,7 @@ do
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 						#Output processed event averages for each main core frequency
+						echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 						octave_output+="###########################################################\n"
 						octave_output+="Model validation against test set\n"
 						octave_output+="###########################################################\n"
@@ -2695,6 +2701,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 					#Output processed event averages for each main core frequency
+					echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 					octave_output+="###########################################################\n"
 					octave_output+="Model validation against test set\n"
 					octave_output+="###########################################################\n"
@@ -2730,6 +2737,8 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 				unset -v octave_output				
 				for count in $(seq 0 $((${#FREQ_LIST[@]}-1)))
 				do
+					echo -e "********************" >&1
+					echo "Building model for FREQ: ${FREQ_LIST[$count]} $(($count+1))/${#FREQ_LIST[@]}"
 					if [[ -n $CM_MODE ]]; then
 						unset -v cross_data_count
 						while [[ $cross_data_count -ne ${#CROSS_FREQ_LIST[@]} ]]
@@ -2790,7 +2799,6 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						echo -e "********************" >&1
 						echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
 						unset -v nfolds_data_count
-						unset -v octave_output
 						while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
 						do
 							unset -v nfolds_octave_output
@@ -2851,6 +2859,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 						#Output processed event averages for each main core frequency
+						echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 						octave_output+="###########################################################\n"
 						octave_output+="Model validation against test set\n"
 						octave_output+="###########################################################\n"
@@ -2878,6 +2887,8 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					fi
 				done
 				data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
+				echo -e "********************" >&1
+				echo "Completed freq: $data_count/${#FREQ_LIST[@]}"
 			done	
 		fi
 		#Analyse collected results
@@ -3101,6 +3112,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 						#Output processed event averages for each main core frequency
+						echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 						octave_output+="###########################################################\n"
 						octave_output+="Model validation against test set\n"
 						octave_output+="###########################################################\n"
@@ -3136,6 +3148,8 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 					unset -v octave_output				
 					for count in $(seq 0 $((${#FREQ_LIST[@]}-1)))
 					do
+						echo -e "********************" >&1
+						echo "Building model for FREQ: ${FREQ_LIST[$count]} $(($count+1))/${#FREQ_LIST[@]}"
 						if [[ -n $CM_MODE ]]; then
 							unset -v cross_data_count
 							while [[ $cross_data_count -ne ${#CROSS_FREQ_LIST[@]} ]]
@@ -3196,7 +3210,6 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							echo -e "********************" >&1
 							echo "Performing $KFOLDS_NUM-Folds Cross-Validation on Training Set"
 							unset -v nfolds_data_count
-							unset -v octave_output
 							while [[ $nfolds_data_count -ne ${#TRAIN_SET_FOLDS[@]} ]]
 							do
 								unset -v nfolds_octave_output
@@ -3257,6 +3270,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR_IND=$(getMaxIndex nfolds_max_ev_nfolds_corr ${#nfolds_max_ev_nfolds_corr[@]} )
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && NFOLDS_MAX_EV_NFOLDS_CORR=${nfolds_max_ev_nfolds_corr[$NFOLDS_MAX_EV_NFOLDS_CORR_IND]}
 							#Output processed event averages for each main core frequency
+							echo "Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW"
 							octave_output+="###########################################################\n"
 							octave_output+="Model validation against test set\n"
 							octave_output+="###########################################################\n"
@@ -3282,8 +3296,11 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							octave_output=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
 							rm "train_set_$seed.data" "test_set_$seed.data"
 						fi
+						
 					done
 					data_count=$(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:"){ count++ }}END{print count}' )
+					echo -e "********************" >&1
+					echo "Completed freq: $data_count/${#FREQ_LIST[@]}"
 				done	
 			fi
 			#Analyse collected results
@@ -3686,6 +3703,10 @@ IFS=";" read -a avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEG
 IFS=";" read -a rel_avg_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Rel. Err. Std. Dev
 [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_avg_abs_err_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Error" && $3=="Standart" && $4=="Deviation[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
+#Max. Rel. Error
+IFS=";" read -a max_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+#Min. Rel. Error
+IFS=";" read -a min_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Minimum" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Avg Ev. Cross. Corr.
 [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Max Ev. Cross. Corr.
@@ -3719,11 +3740,11 @@ case $OUTPUT_MODE in
 	2)
 		if [[ -z $CM_MODE || -z $ALL_FREQUENCY ]]; then
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
-				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
-				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}\t\${model_coeff[\$i]}"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
+				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}\t\${model_coeff[\$i]}"
 			else
-				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tModel coefficients"
-				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${model_coeff[\$i]}"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tAverage Absolute Error[$REGRESSAND_UNIT]\tAbsolute Error Stdandart Deviation[$REGRESSAND_UNIT]\tAverage Relative Error[%]\tRelative Error Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tModel coefficients"
+				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${avg_abs_err[\$i]}\t\${std_dev_err[\$i]}\t\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${model_coeff[\$i]}"
 			fi			
 		else
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
@@ -3738,11 +3759,11 @@ case $OUTPUT_MODE in
 	3)
 		if [[ -z $CM_MODE || -z $ALL_FREQUENCY ]]; then
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
-				HEADER="Average Relative Error[%]\tRelative Error Standart Deviation[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]"
-				DATA="\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}"
+				HEADER="Average Relative Error[%]\tRelative Error Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]"
+				DATA="\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}"
 			else
-				HEADER="Average Relative Error[%]\tRelative Error Standart Deviation[%]"
-				DATA="\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}"
+				HEADER="Average Relative Error[%]\tRelative Error Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]"
+				DATA="\${rel_avg_abs_err[\$i]}\t\${rel_avg_abs_err_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}"
 			fi			
 		else
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
@@ -3808,15 +3829,19 @@ else
     if [[ $OUTPUT_MODE == 2 || $OUTPUT_MODE == 3  ]]; then
 	    echo -e "--------------------" >&1
 	    MEAN_REL_AVG_ABS_ERR=$(getMean rel_avg_abs_err ${#rel_avg_abs_err[@]} )
+	    MEAN_MAX_REL_ABS_ERR=$(getMean max_rel_abs_err ${#max_rel_abs_err[@]} )
+    	    MEAN_MIN_REL_ABS_ERR=$(getMean min_rel_abs_err ${#min_rel_abs_err[@]} )
 	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && MEAN_REL_AVG_ABS_ERR_STD_DEV=$(getMean rel_avg_abs_err_std_dev ${#rel_avg_abs_err_std_dev[@]} )
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && MEAN_AVG_EV_CROSS_CORR=$(getMean avg_ev_cross_corr ${#avg_ev_cross_corr[@]} )
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && MEAN_MAX_EV_CROSS_CORR=$(getMean max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-	    echo "Mean model relative error -> $MEAN_REL_AVG_ABS_ERR" >&1
-	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $MEAN_REL_AVG_ABS_ERR_STD_DEV" >&1
-	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
-	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
+	    printf 'Mean model average relative error -> %.5f\n' "$MEAN_REL_AVG_ABS_ERR"
+    	    printf 'Mean model maximum relative error -> %.5f\n' "$MEAN_MAX_REL_ABS_ERR"
+    	    printf 'Mean model minimum relative error -> %.5f\n' "$MEAN_MIN_REL_ABS_ERR"
+    	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && printf 'Mean model relative error stdandart deviation -> %.5f\n' "$MEAN_REL_AVG_ABS_ERR_STD_DEV"
+	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model average event cross-correlation -> %.5f\n' "$MEAN_AVG_EV_CROSS_CORR"
+    	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model max event cross-correlation -> %.5f\n' "$MEAN_MAX_EV_CROSS_CORR"
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation ${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]} is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
 	    echo -e "--------------------" >&1
     fi

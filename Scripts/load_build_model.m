@@ -138,6 +138,8 @@ if (modeSel == 2)
   rel_abs_err=abs(err./test_regressand)*100;
   rel_avg_abs_err=mean(rel_abs_err);
   rel_err_std_dev=std(rel_abs_err,1);
+  max_rel_abs_err=max(rel_abs_err);
+  min_rel_abs_err=min(rel_abs_err);
 
   disp("###########################################################");
   disp("Model validation against test set");
@@ -150,6 +152,8 @@ if (modeSel == 2)
   disp("###########################################################");
   disp(["Average Relative Error[%]: " num2str(rel_avg_abs_err,"%.5f")]);
   disp(["Relative Error Standart Deviation[%]: " num2str(rel_err_std_dev,"%.5f")]);
+  disp(["Maximum Relative Error[%]: " num2str(max_rel_abs_err,"%.5f")]);
+  disp(["Minimum Relative Error[%]: " num2str(min_rel_abs_err,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 
     disp("###########################################################");
     disp(["Average Event Cross-Correlation[%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
