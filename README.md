@@ -8,7 +8,7 @@ Readme to be updated.
 
 | Benchmark                  | Time [s] |
 |----------------------------|---------:|
-| **cBench**                 |          |
+| **cBench**                            |
 | aha-compress               |     3.19 |
 | aha-mont64                 |     2.64 |
 | ctl-stack                  |     2.11 |
@@ -59,7 +59,7 @@ Readme to be updated.
 | slre                       |     5.54 |
 | stanford                   |     1.90 |
 | whetstone                  |   115.75 |
-| **Proprietary CV Program** |          |
+| **Proprietary CV Program**            |
 | use\_case\_opt             |    15.36 |
 | use\_case\_noopt           |    22.67 |
 | use\_case\_wcc\_opt        |    19.50 | 
