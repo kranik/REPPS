@@ -84,7 +84,7 @@ def main(argv):
 			else:
 				try:
 					plottype = int(arg)
-					if plottype != 1:
+					if plottype != 1 and plottype != 2:
 						print 'Error in option <-p ' + arg + '>: <' + arg + '> is out of bounds. Please enter a valid ploy type <1>.'
 						sys.exit(2)
 				except ValueError, exp:
@@ -338,6 +338,100 @@ def main(argv):
 			pdfp = PdfPages(outputfile)
 			pdfp.savefig(fig)
 			pdfp.close()
+			
+	#Plotting part of the script
+	if plottype == 2:
+		#Process aggregated data for plot type 2
+		fig, axs = plt.subplots(figsize=(1300/my_dpi, 900/my_dpi))
+
+		color = iter(cm.rainbow(np.linspace(0, 1, len(inputfile)+1)))
+
+		clr = next(color)
+		sample_np = np.array(sample)
+		#axs.plot(sample_np-min(sample), phys_value, label=blabel, color=clr)
+		
+		#plt.scatter(sample_np-min(sample), relative_error_vect[:75] * 100.0, c='g', label='relative error bloh')
+		
+		for num, infile in enumerate(inputfile):
+			clr = next(color)
+			plt.scatter(sample_np-min(sample)+1, np.divide(np.subtract(phys_value,pred_value[num]),phys_value)*100, label=inputlabel[num], color=clr)
+			plt.scatter(sample_np-min(sample)+1, np.full((sample_np-min(sample)+1).shape, np.mean(np.divide(np.subtract(phys_value,pred_value[num]),phys_value)*100)), c='g', marker='_', label='avg relative error')
+		
+		# First 75 benchmarks are BEEBS, the remaining ones are IRIDA
+		#plt.scatter(y[:75], relative_error_vect[:75] * 100.0, c='g', label='relative error bloh')
+		#plt.scatter(y[75:], relative_error_vect[75:] * 100.0, c='orange', label='relative error bleh')
+		# Print horizontal error marks at each X value
+		#plt.scatter(y, np.full(y.shape, mean_relative_error * 100.0), c='g', marker='_', label='avg relative error')
+		#plt.scatter(y, np.full(y.shape, mean_abs_relative_error * 100.0), c='r', marker='_', label='+mean(abs(relative error))')
+		#plt.scatter(y, np.full(y.shape, -mean_abs_relative_error * 100.0), c='r', marker='_', label='-mean(abs(relative error))')
+		#plt.scatter(y, np.full(y.shape, (mean_relative_error + stddev_relative_error) * 100.0), c='b', marker='_', label='relative error + SD')
+		#plt.scatter(y, np.full(y.shape, (mean_relative_error - stddev_relative_error) * 100.0), c='b', marker='_', label='relative error - SD')
+
+		#for num, infile in enumerate(inputfile):
+			#clr = next(color)
+			#axs.plot(sample_np-min(sample)+1, pred_value[num], label=inputlabel[num], color=clr)
+
+		axs.set_xlim(1, len(sample))
+		#axs.set_ylim(bottom = 0.024)
+		#axs.set_ylim(top = 0.034)
+
+		#Automatically colculate the closest power of 10 to round to (for nice output). Then set the assigned number of xticks 
+		#xticks_deccount=0
+		#while True:
+		#	if (sample_np.size/(xticks-1)) > (10 ** xticks_deccount):
+		#		xticks_deccount+=1
+		#	else:
+		#		xticks_deccount-=2
+		#		break
+
+		#sample_np = np.insert((sample_np[int(round(sample_np.size/(xticks-1),-xticks_deccount))-1::int(round(sample_np.size/(xticks-1),-xticks_deccount))]-min(sample)+1), 0, 1)
+		
+		sample_np = np.insert((sample_np[int((sample_np.size-min(sample)+1)/(xticks-1))::int((sample_np.size-min(sample)+1)/(xticks-1))]-min(sample)+1), 0, 1)
+		if sample_np.size == xticks:
+			sample_np[sample_np.size-1] = len(sample)
+		else:
+			sample_np = np.append(sample_np,len(sample))
+		
+		axs.set_xticks(sample_np)
+		axs.set_xticklabels(sample_np, fontsize='small', rotation='45')
+
+		axs.set_xlabel(xlabel, fontweight='bold')
+		axs.set_ylabel(ylabel, fontweight='bold')
+
+		axshandles, dud = axs.get_legend_handles_labels()
+		#loc is 0 by default otherwise set by user
+		axs.legend(handles=axshandles, loc=legendloc)
+		axs.grid(True)
+
+		fig.tight_layout()
+		plt.show()
+
+		if outputfile != '':
+			pdfp = PdfPages(outputfile)
+			pdfp.savefig(fig)
+			pdfp.close()			
+			
+
+#TODO: integrate this plot type (scatter) into script and test			
+#from matplotlib import pyplot as plt
+
+# First 75 benchmarks are BEEBS, the remaining ones are IRIDA
+#plt.scatter(y[:75], relative_error_vect[:75] * 100.0, c='g', label='relative error BEEBS')
+#plt.scatter(y[75:], relative_error_vect[75:] * 100.0, c='orange', label='relative error IRIDA')
+# Print horizontal error marks at each X value
+#plt.scatter(y, np.full(y.shape, mean_relative_error * 100.0), c='g', marker='_', label='avg relative error')
+#plt.scatter(y, np.full(y.shape, mean_abs_relative_error * 100.0), c='r', marker='_', label='+mean(abs(relative error))')
+#plt.scatter(y, np.full(y.shape, -mean_abs_relative_error * 100.0), c='r', marker='_', label='-mean(abs(relative error))')
+#plt.scatter(y, np.full(y.shape, (mean_relative_error + stddev_relative_error) * 100.0), c='b', marker='_', label='relative error + SD')
+#plt.scatter(y, np.full(y.shape, (mean_relative_error - stddev_relative_error) * 100.0), c='b', marker='_', label='relative error - SD')
+#plt.xscale('log')
+#plt.xlabel("True values")
+#plt.ylabel("Relative error [%]")
+#plt.legend(loc='upper right')
+#plt.grid(True)
+#plt.show()
+			
+			
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
