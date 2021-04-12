@@ -1450,7 +1450,7 @@ if [[ -n $CC_EV_CHECK ]];then
 	echo -e "--------------------" >&1
 	echo -e "Removing correlated events from events pool." >&1
 	echo -e "--------------------" >&1
-	while [[ $(echo "$EVENTS_POOL" | tr "," "\n" | wc -l) -gt $NUM_MODEL_EVENTS ]]
+	while [[ $(echo "$EVENTS_POOL" | tr "," "\n" | wc -l) -gt 0 ]]
 	do
 		EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo -e "Checking current events pool:" >&1
