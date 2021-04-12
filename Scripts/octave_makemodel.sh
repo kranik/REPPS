@@ -1565,7 +1565,7 @@ if [[ -n $CC_EV_CHECK ]];then
 		if (( $(echo "$MAX_EV_CROSS_CORR >= $CC_EV_CHECK" |bc -l) )); then
 			#If event correlation is more than the threshhold need to check and remove the event which makes worse model
 			echo -e "--------------------" >&1 
-			echo -e "Removing the worse event from the correlated list from pool." >&1
+			echo -e "Removing the worse event from the correlated set from pool." >&1
 			echo -e "Events pair invesigated:" >&1
 			EVENTS_LIST_TEMP="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}"
 			EVENTS_LIST_TEMP_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST_TEMP" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
@@ -1829,15 +1829,13 @@ do
 						   	seed=$RANDOM
 							touch "train_set_$seed.data" "test_set_$seed.data"
 							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-							if [[ -n $TEST_FILE ]]; then
-								awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-							else
-								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-							fi
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 							nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 							rm "train_set_$seed.data" "test_set_$seed.data"
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+						echo -e "--------------------" >&1
+						echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 					done
 			      	echo -e "********************" >&1
 					#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -1988,15 +1986,15 @@ do
 							   	seed=$RANDOM
 								touch "train_set_$seed.data" "test_set_$seed.data"
 								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-								if [[ -n $TEST_FILE ]]; then
-									awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-								else
-									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-								fi
-								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
+								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
+								#echo "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')"
+								#exit
 								rm "train_set_$seed.data" "test_set_$seed.data"
 			    				done
 							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+							echo -e "--------------------" >&1
+							echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 						done
 					 	echo -e "********************" >&1
 						#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2254,15 +2252,13 @@ do
 					   	seed=$RANDOM
 						touch "train_set_$seed.data" "test_set_$seed.data"
 						awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-						if [[ -n $TEST_FILE ]]; then
-							awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-						else
-							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-						fi
+						awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 						nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 						rm "train_set_$seed.data" "test_set_$seed.data"
 	    				done
 					nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+					echo -e "--------------------" >&1
+					echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 				done
 	           	echo -e "********************" >&1
 				#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2410,17 +2406,13 @@ do
 						   	seed=$RANDOM
 							touch "train_set_$seed.data" "test_set_$seed.data"
 							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-							if [[ -n $TEST_FILE ]]; then
-								awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-							else
-								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-							fi
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 							nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 							rm "train_set_$seed.data" "test_set_$seed.data"
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
 						echo -e "--------------------" >&1
-						echo "Completed folds: $nfolds_data_count/${#TRAIN_SET_FOLDS[@]}"
+						echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 					done
 			      	echo -e "********************" >&1
 					#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2588,15 +2580,13 @@ do
 						   	seed=$RANDOM
 							touch "train_set_$seed.data" "test_set_$seed.data"
 							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-							if [[ -n $TEST_FILE ]]; then
-								awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-							else
-								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-							fi
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 							nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 							rm "train_set_$seed.data" "test_set_$seed.data"
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+						echo -e "--------------------" >&1
+						echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 					done
 			      	echo -e "********************" >&1
 					#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -2744,15 +2734,13 @@ do
 							   	seed=$RANDOM
 								touch "train_set_$seed.data" "test_set_$seed.data"
 								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-								if [[ -n $TEST_FILE ]]; then
-									awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-								else
-									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-								fi
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 								rm "train_set_$seed.data" "test_set_$seed.data"
 			    				done
 							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+							echo -e "--------------------" >&1
+							echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 						done
 					 	echo -e "********************" >&1
 						#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -3007,15 +2995,13 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						   	seed=$RANDOM
 							touch "train_set_$seed.data" "test_set_$seed.data"
 							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-							if [[ -n $TEST_FILE ]]; then
-								awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-							else
-								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-							fi
+							awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 							nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 							rm "train_set_$seed.data" "test_set_$seed.data"
 		    				done
 						nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+						echo -e "--------------------" >&1
+						echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 					done
 			      	echo -e "********************" >&1
 					#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -3165,15 +3151,13 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 							   	seed=$RANDOM
 								touch "train_set_$seed.data" "test_set_$seed.data"
 								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-								if [[ -n $TEST_FILE ]]; then
-									awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-								else
-									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-								fi
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data"
 								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 								rm "train_set_$seed.data" "test_set_$seed.data"
 			    				done
 							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+							echo -e "--------------------" >&1
+							echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 						done
 					 	echo -e "********************" >&1
 						#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -3418,15 +3402,13 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							   	seed=$RANDOM
 								touch "train_set_$seed.data" "test_set_$seed.data"
 								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-								if [[ -n $TEST_FILE ]]; then
-									awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-								else
-									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-								fi
+								awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 								nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 								rm "train_set_$seed.data" "test_set_$seed.data"
 			    				done
 							nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+							echo -e "--------------------" >&1
+							echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 						done
 					 	echo -e "********************" >&1
 						#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
@@ -3576,15 +3558,13 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 								   	seed=$RANDOM
 									touch "train_set_$seed.data" "test_set_$seed.data"
 									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${train_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "train_set_$seed.data"
-									if [[ -n $TEST_FILE ]]; then
-										awk -v START="$TEST_START_LINE" -v SEP='\t' -v BENCH_COL="$TEST_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$TEST_FILE" > "test_set_$seed.data"
-									else
-										awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
-									fi
+									awk -v START="$RESULT_START_LINE" -v SEP='\t' -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${test_nfolds[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data" 	
 									nfolds_octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)	    	
 									rm "train_set_$seed.data" "test_set_$seed.data"
 				    				done
 								nfolds_data_count=$(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP;count=0}{if ($1=="Average" && $2=="Predicted" && $3=="Regressand:" ){ count++ }}END{print count}' )
+								echo -e "--------------------" >&1
+								echo -e "Successfully completed $nfolds_data_count/$KFOLDS_NUM folds."
 							done
 						 	echo -e "********************" >&1
 							#After collecting all nfolds freqeuncies analyse data and store in octave_output to ensure correct processing later on in script (so we don't have to break previous functionality)
