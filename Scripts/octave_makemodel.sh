@@ -1299,7 +1299,7 @@ if [[ -n $CONST_EV_CHECK ]];then
 	echo -e "Preparing data for automatic model generation." >&1
 	echo -e "--------------------" >&1
 	echo -e "Removing constant events from events pool." >&1
-	echo -e "Current events used:" >&1
+	echo -e "Current events pool:" >&1
 	echo "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
 	echo -e "--------------------" >&1
 	spaced_POOL="${EVENTS_POOL//,/ }"
@@ -1449,15 +1449,12 @@ if [[ -n $CC_EV_CHECK ]];then
 	echo -e "Preparing data for automatic model generation." >&1
 	echo -e "--------------------" >&1
 	echo -e "Removing correlated events from events pool." >&1
-	echo -e "Current events used:" >&1
-	echo "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
 	echo -e "--------------------" >&1
 	while [[ $(echo "$EVENTS_POOL" | tr "," "\n" | wc -l) -gt $NUM_MODEL_EVENTS ]]
 	do
 		EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-		echo -e "********************" >&1
 		echo -e "Checking current events pool:" >&1
-		echo "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
+		echo -e "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
 		unset -v data_count				
 		if [[ -n $ALL_FREQUENCY ]]; then
 			while [[ $data_count -ne 1 ]]
@@ -1563,11 +1560,11 @@ if [[ -n $CC_EV_CHECK ]];then
 		MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "Max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1		
-		
 		#Check for bad events
 		if (( $(echo "$MAX_EV_CROSS_CORR >= $CC_EV_CHECK" |bc -l) )); then
-			#If event correlation is more than the threshhold need to check and remove the event which makes worse model 
-			echo -e "Removing th worse event from the correlated list from pool." >&1
+			#If event correlation is more than the threshhold need to check and remove the event which makes worse model
+			echo -e "--------------------" >&1 
+			echo -e "Removing the worse event from the correlated list from pool." >&1
 			echo -e "Events pair invesigated:" >&1
 			EVENTS_LIST_TEMP="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}"
 			EVENTS_LIST_TEMP_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST_TEMP" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
@@ -1681,24 +1678,28 @@ if [[ -n $CC_EV_CHECK ]];then
 				if [[ -z $first_event_rel_avg_abs_err ]]; then
 					first_event_rel_avg_abs_err=$(getMean temp_event_rel_avg_abs_err ${#temp_event_rel_avg_abs_err[@]} )
 					EV_REMOVE=$EV_TEMP
-					echo "Event error: $first_event_rel_avg_abs_err"
+					echo "Event model MAPE: $first_event_rel_avg_abs_err"
 				else
 					#Compare the errors of both models from the correlated events
 					mean_temp_event_rel_avg_abs_err=$(getMean temp_event_rel_avg_abs_err ${#temp_event_rel_avg_abs_err[@]})
-					echo "Event error: $mean_temp_event_rel_avg_abs_err"
+					echo "Event model MAPE: $mean_temp_event_rel_avg_abs_err"
 					if (( $(echo "$mean_temp_event_rel_avg_abs_err >= $first_event_rel_avg_abs_err" |bc -l) )); then
+						echo -e "********************" >&1
 						EV_REMOVE=$EV_TEMP
-						echo "Need to remove this events from pool $EV_REMOVE."
+						#EV_REMOVE_LABEL=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EV_REMOVE" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
+						#echo "Removing second event $EV_REMOVE -> $EV_REMOVE_LABEL from pool."
 					else
-						echo "Removing first event $EV_REMOVE from pool."
+						echo -e "********************" >&1
+						#EV_REMOVE_LABEL=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EV_REMOVE" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
+						#echo "Removing first event $EV_REMOVE -> $EV_REMOVE_LABEL from pool."
 					fi
 				fi
 			done
 			
-			
+			EV_REMOVE_LABEL=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EV_REMOVE" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)	
+			echo "Removing event $EV_REMOVE -> $EV_REMOVE_LABEL from pool (high correlation to better event)."		
 			EVENTS_POOL=$(echo "$EVENTS_POOL" | sed "s/^$EV_REMOVE,//g;s/,$EV_REMOVE,/,/g;s/,$EV_TEMP$//g;s/^$EV_REMOVE$//g")
 			EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-			echo "Bad Event (high correlation)!" >&1
 			echo "Removed from events pool." >&1
 			echo -e "********************" >&1
 			if [[ $EVENTS_POOL !=  "\n" ]]; then
@@ -1708,15 +1709,17 @@ if [[ -n $CC_EV_CHECK ]];then
 					echo "Final event left in pool. Terminating trim loop."
 					continue
 				fi
-			else
-				echo "New events pool -> (empty)" >&1
-				echo "Program cannot continue with an empty events pool." >&1
-				echo "Please use non-constant events for model generation." >&1
-				exit
+			#else
+				#echo "New events pool -> (empty)" >&1
+				#echo "Program cannot continue with an empty events pool." >&1
+				#echo "Please use non-correlated events for model generation." >&1
+				#exit
 			fi
 			echo -e "********************" >&1
+			echo -e "--------------------" >&1 
 		else
-			echo "Events in pool have lower max correlation $MAX_EV_CROSS_CORR than threshold $CC_EV_CHECK."
+			echo -e "--------------------" >&1 
+			echo "Events remaining in pool have lower max cross-correlation $MAX_EV_CROSS_CORR than threshold $CC_EV_CHECK."
 			break
 		fi 
 	done
