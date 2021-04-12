@@ -1299,6 +1299,7 @@ if [[ -n $CONST_EV_CHECK ]];then
 	echo -e "Preparing data for automatic model generation." >&1
 	echo -e "--------------------" >&1
 	echo -e "Removing constant events from events pool." >&1
+	echo -e "--------------------" >&1
 	echo -e "Current events pool:" >&1
 	echo "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
 	echo -e "--------------------" >&1
@@ -1697,7 +1698,7 @@ if [[ -n $CC_EV_CHECK ]];then
 			done
 			
 			EV_REMOVE_LABEL=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EV_REMOVE" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)	
-			echo "Removing event $EV_REMOVE -> $EV_REMOVE_LABEL from pool (high correlation to better event)."		
+			echo "Removing event $EV_REMOVE -> $EV_REMOVE_LABEL from pool (high correlation to better regressand event)."		
 			EVENTS_POOL=$(echo "$EVENTS_POOL" | sed "s/^$EV_REMOVE,//g;s/,$EV_REMOVE,/,/g;s/,$EV_TEMP$//g;s/^$EV_REMOVE$//g")
 			EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 			echo "Removed from events pool." >&1
