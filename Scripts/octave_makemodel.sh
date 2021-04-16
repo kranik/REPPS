@@ -1736,6 +1736,7 @@ if [[ -n $CC_EV_CHECK ]];then
 	echo -e "Non-correlated events to be used in automatic generation:" >&1
 	EVENTS_POOL_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_POOL" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "$EVENTS_POOL -> $EVENTS_POOL_LABELS" >&1
+	unset -v EV_REMOVE
 	echo -e "--------------------" >&1
 	echo -e "====================" >&1
 fi
