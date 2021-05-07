@@ -549,9 +549,9 @@ if [[ -e "$BENCH_FILE" ]]; then
 		echo -e "===================="
 		exit 1
 	fi
-	IFS=";" read -a TRAIN_SET <<< "$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $1 != '\n' ){ print $1 }}' < "$BENCH_FILE" | sort -d | tr "\n" ";" | head -c -1 )"
-	TRAIN_SET_LIST="$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $1 != '\n' ){ print $1 }}' < "$BENCH_FILE" | sort -d | tr "\n" "," | head -c -1 )"
-	IFS=";" read -a TEST_SET <<< "$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $2 != '\n' ){ print $2 }}' < "$BENCH_FILE" | sort -d | tr "\n" ";" |  head -c -1 )"
+	IFS=";" read -a TRAIN_SET <<< "$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $1 != '\n' && $1 !~ /#/){ print $1 }}' < "$BENCH_FILE" | sort -d | tr "\n" ";" | head -c -1 )"
+	TRAIN_SET_LIST="$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $1 != '\n' && $1 !~ /#/){ print $1 }}' < "$BENCH_FILE" | sort -d | tr "\n" "," | head -c -1 )"
+	IFS=";" read -a TEST_SET <<< "$(awk -v SEP='\t' -v START="$BENCH_START_LINE" 'BEGIN{FS=SEP}{if (NR >= START && $2 != '\n' && $1 !~ /#/){ print $2 }}' < "$BENCH_FILE" | sort -d | tr "\n" ";" |  head -c -1 )"
 	#Check if we have successfully extracted benchmark sets 
 	if [[ ${#TRAIN_SET[@]} == 0 || ${#TEST_SET[@]} == 0 ]]; then
 		echo "Unable to extract train or test set from benchmarks file!" >&2
@@ -563,9 +563,9 @@ if [[ -e "$BENCH_FILE" ]]; then
 	for count in $(seq 0 1 $((${#TRAIN_SET[@]}-1)))
 	do
 		#containsElement "$FREQ_SELECT" "${FREQ_LIST[@]}"
-		if [[ ! " ${BENCH_LIST[@]} " =~ " ${TRAIN_SET[$count]} " ]]; then
-			echo "cic"
+		if [[ ! "${BENCH_LIST[@]}" =~ "${TRAIN_SET[$count]}" ]]; then
 			echo "Specified train benchmark ${TRAIN_SET[$count]} for -b is not present in result file."
+			echo "h1"
 			echo -e "===================="
        	 	exit 1
 		fi
@@ -578,16 +578,16 @@ if [[ -e "$BENCH_FILE" ]]; then
 			if [[ ! " ${BENCH_LIST[@]} " =~ " ${TEST_SET[$count]} " ]]; then
 				echo "Specified test benchmark ${TEST_SET[$count]} for -b is not present in test/cross file."
 				echo -e "===================="
-		       	 	exit 1
+		       	exit 1
 			fi
 		done
 	else
 		for count in $(seq 0 1 $((${#TEST_SET[@]}-1)))
 		do
 			#containsElement "$FREQ_SELECT" "${FREQ_LIST[@]}"
-			if [[ ! " ${BENCH_LIST[@]} " =~ " ${TEST_SET[$count]} " ]]; then
-				echo ""
+			if [[ ! "${BENCH_LIST[@]}" =~ "${TEST_SET[$count]}" ]]; then
 				echo "Specified test benchmark ${TEST_SET[$count]} for -b is not present in result file."
+				echo "h2"
 				echo -e "===================="
 	       	 	exit 1
 			fi
