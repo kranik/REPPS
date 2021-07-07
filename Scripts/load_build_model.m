@@ -131,15 +131,14 @@ if (modeSel == 2)
  
   %Compute absolute model errors
   err=(test_regressand-pred_regressand);
-  abs_err=abs(err);
-  avg_abs_err=mean(abs_err);
-  std_dev_err=std(abs_err,1);
+  mean_err=mean(err);
+  std_dev_err=std(err,1);
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./test_regressand)*100;
-  rel_avg_abs_err=mean(rel_abs_err);
-  rel_err_std_dev=std(rel_abs_err,1);
-  max_rel_abs_err=max(rel_abs_err);
-  min_rel_abs_err=min(rel_abs_err);
+  abs_per_err=abs(err./test_regressand)*100;
+  mean_abs_per_err=mean(abs_per_err);
+  rel_std_dev=(std_dev_err/abs(mean_err))*100;
+  max_abs_per_err=max(abs_per_err);
+  min_abs_per_err=min(abs_per_err);
 
   disp("###########################################################");
   disp("Model validation against test set");
@@ -147,13 +146,13 @@ if (modeSel == 2)
   disp(["Average Predicted Regressand: " num2str(mean(pred_regressand),"%.5f")]);  
   disp(["Predicted Regressand Range[%]: " num2str(abs((range(pred_regressand)./min(pred_regressand))*100),"%d")]);
   disp("###########################################################"); 
-  disp(["Average Absolute Error: " num2str(avg_abs_err,"%.5f")]);
-  disp(["Absolute Error Standart Deviation: " num2str(std_dev_err,"%.5f")]);
+  disp(["Mean Error: " num2str(mean_err,"%.5f")]);
+  disp(["Standart Deviation of Error: " num2str(std_dev_err,"%.5f")]);
   disp("###########################################################");
-  disp(["Average Relative Error[%]: " num2str(rel_avg_abs_err,"%.5f")]);
-  disp(["Relative Error Standart Deviation[%]: " num2str(rel_err_std_dev,"%.5f")]);
-  disp(["Maximum Relative Error[%]: " num2str(max_rel_abs_err,"%.5f")]);
-  disp(["Minimum Relative Error[%]: " num2str(min_rel_abs_err,"%.5f")]);
+  disp(["Mean Absolute Percentage Error[%]: " num2str(mean_abs_per_err,"%.5f")]);
+  disp(["Relative Standart Deviation[%]: " num2str(rel_std_dev,"%.5f")]);
+  disp(["Maximum Absolute Percentage Error[%]: " num2str(max_abs_per_err,"%.5f")]);
+  disp(["Minimum Absolute Percentage Error[%]: " num2str(min_abs_per_err,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 
     disp("###########################################################");
     disp(["Average Event Cross-Correlation[%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
@@ -254,10 +253,9 @@ if (modeSel == 3)
   pred_regressand=test_reg(:,:)*m;
 
   %Compute absolute model errors
-  err=(mean(test_regressand)-mean(pred_regressand));
-  abs_err=abs(err);
+  mean_err=(mean(test_regressand)-mean(pred_regressand));
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./mean(test_regressand))*100;
+  mean_abs_per_err=abs(mean_err./mean(test_regressand))*100;
   
   disp("###########################################################");
   disp("Model validation against test set");
@@ -265,9 +263,9 @@ if (modeSel == 3)
   disp(["Average Predicted Regressand: " num2str(mean(pred_regressand),"%.5f")]); 
   disp(["Predicted Regressand Range[%]: " num2str(abs((range(pred_regressand)./min(pred_regressand))*100),"%d")]);
   disp("###########################################################"); 
-  disp(["Average Absolute Error: " num2str(abs_err,"%.5f")]);
+  disp(["Mean Error: " num2str(mean_err,"%.5f")]);
   disp("###########################################################");
-  disp(["Average Relative Error[%]: " num2str(rel_abs_err,"%.5f")]);
+  disp(["Mean Absolute Percentage Error[%]: " num2str(mean_abs_per_err,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 
     disp("###########################################################");
     disp(["Average Event Cross-Correlation[%]: " num2str((avgcorr/1.0)*100,"%.5f")]);
@@ -348,13 +346,14 @@ if (modeSel == 4)
 
   %Compute absolute model errors
   err=(test_regressand-pred_regressand);
-  abs_err=abs(err);
-  avg_abs_err=mean(abs_err);
+  mean_err=mean(abs_err);
   std_dev_err=std(abs_err,1);
   %compute realtive model errors and deviation
-  rel_abs_err=abs(err./test_regressand)*100;
-  rel_avg_abs_err=mean(rel_abs_err);
-  rel_err_std_dev=std(rel_abs_err,1);
+  abs_per_err=abs(err./test_regressand)*100;
+  mean_abs_per_err=mean(abs_per_err);
+  rel_std_dev=(std_dev_err/abs(mean_err))*100;
+  max_abs_per_err=max(abs_per_err);
+  min_abs_per_err=min(abs_per_err);
   
   disp("###########################################################");
   disp("Model validation against test set");
@@ -363,10 +362,10 @@ if (modeSel == 4)
   disp("###########################################################");
   disp(["Total Number of Samples: " num2str(size(pred_regressand,1),"%d")]);
   disp("###########################################################");
-  disp("Sample[#]\tPredicted Regressand\tAbsolute Error\tRelative Error[%]");
+  disp("Sample[#]\tPredicted Regressand\tError\tAbsolute Percentage Error[%]");
   disp("###########################################################");
   for sample = 1:size(pred_regressand,1)
-    disp([num2str(sample,"%d") "\t" num2str(pred_regressand(sample),"%.5f") "\t" num2str(abs_err(sample),"%.5f") "\t" num2str(rel_abs_err(sample),"%.5f")]);
+    disp([num2str(sample,"%d") "\t" num2str(pred_regressand(sample),"%.5f") "\t" num2str(err(sample),"%.5f") "\t" num2str(abs_per_err(sample),"%.5f")]);
   endfor
   
 endif

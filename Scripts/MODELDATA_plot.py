@@ -10,6 +10,7 @@ import getopt
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import pylab
 from matplotlib.backends.backend_pdf import PdfPages
 # import matplotlib.patches as mpatches
 # from operator import itemgetter
@@ -18,6 +19,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 # from matplotlib.legend_handler import HandlerLine2D
 from matplotlib.pyplot import cm
 from matplotlib import rc#, rcParams
+import copy
 
 
 # class ArrowHandler(HandlerLine2D):
@@ -75,7 +77,7 @@ def main(argv):
 
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'Usage: -p <plot type> (currently only 1 type) -x <x axis label> -t <number of x ticks> -y <y axis label> -b <physical measurements benchmark file> -l <benchmark label> -i <model input file> -a <mode label> -o <output file>'
+			print 'Usage: -p <plot type> (currently only 1 type) -x <x axis label> -t <number of x ticks> -y <y axis label> -e <legend location> -b <physical measurements benchmark file> -l <benchmark label> -i <model input file> -a <mode label> -o <output file>'
 			sys.exit(2)
 		elif opt in ("-p", "--ptype"):
 			if plottype != 0:
@@ -160,19 +162,19 @@ def main(argv):
 					fileopentest.close()
 					sys.exit(2)
 				else:
-					if re.match(r"#Sample\[#\]\tPredicted Power\[W\]\tAbsolute Error\[W\]\tRelative Error\[%\]", checkreadline):
+					if re.match(r"#Sample\[#\]\tPredicted Power\[W\]\tError\[W\]\tAbsolute Percentage Error\[%\]", checkreadline):
 						fileopentest.close()
 						inputfile.append(arg)
-					elif re.match(r"#Sample\[#\]\tPredicted Energy\[J\]\tAbsolute Error\[J\]\tRelative Error\[%\]", checkreadline):
+					elif re.match(r"#Sample\[#\]\tPredicted Energy\[J\]\tError\[J\]\tAbsolute Percentage Error\[%\]", checkreadline):
 						fileopentest.close()
 						inputfile.append(arg)
 						energy_flag = 1
 					else:
 						print 'Error in option <-i ' + arg + '>: file <' + arg + '> is not the correct format or is empty. Please enter a valid input file.'
 						print 'The results file should start with the following header, followed by the data:'
-						print '#Sample[#]\tPredicted Power[W]\tAbsolute Error[W]\tRelative Error[%]'
+						print '#Sample[#]\tPredicted Power[W]\tError[W]\tAbsolute Percentage Error[%]'
 						print 'Or if Energy is computed, the following header:'
-						print '#Sample[#]\tPredicted Energy[J]\tAbsolute Error[J]\tRelative Error[%]'
+						print '#Sample[#]\tPredicted Energy[J]\tError[J]\tAbsolute Percentage Error[%]'
 						print 'NB: This script DOES NOT currently have a way to determine if the data format is correct so please use the proper data collection tool in order to not break the plots.'
 						fileopentest.close()
 						sys.exit(2)
@@ -293,7 +295,7 @@ def main(argv):
 
 		clr = next(color)
 		sample_np = np.array(sample)
-		axs.plot(sample_np-min(sample), phys_value, label=blabel, color=clr)
+		data = axs.plot(sample_np-min(sample), phys_value, label=blabel, color=clr)
 
 		for num, infile in enumerate(inputfile):
 			clr = next(color)
@@ -329,10 +331,21 @@ def main(argv):
 		axshandles, dud = axs.get_legend_handles_labels()
 		#loc is 0 by default otherwise set by user
 		axs.legend(handles=axshandles, loc=legendloc)
+		#figlegend = pylab.figure(figsize=(2600/my_dpi, 100/my_dpi))
+		# copy the handles
+		#axshandles = [copy.copy(ha) for ha in axshandles ]
+		# set the linewidths to the copies
+		#[ha.set_linewidth(10) for ha in axshandles ]
+		#figlegend.legend(data, handles=axshandles, loc='center', ncol=4, mode="expand")
+		#figlegend.legend(handles=axshandles, bbox_to_anchor=(0., 1.02, 2., .102), loc='lower left', ncol=4, mode="expand", borderaxespad=0.)
 		axs.grid()
 
 		fig.tight_layout()
 		plt.show()
+		#pdfp = PdfPages('legend.pdf')
+		#pdfp.savefig(figlegend)
+		#pdfp.close()
+		#figlegend.show()
 
 		if outputfile != '':
 			pdfp = PdfPages(outputfile)
@@ -400,7 +413,8 @@ def main(argv):
 
 		axshandles, dud = axs.get_legend_handles_labels()
 		#loc is 0 by default otherwise set by user
-		axs.legend(handles=axshandles, loc=legendloc)
+		#axs.legend(handles=axshandles, loc=legendloc)
+		axs.legend(handles=axshandles, bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode="expand", borderaxespad=0.)
 		axs.grid(True)
 
 		fig.tight_layout()
