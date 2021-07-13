@@ -346,8 +346,8 @@ if (modeSel == 4)
 
   %Compute absolute model errors
   err=(test_regressand-pred_regressand);
-  mean_err=mean(abs_err);
-  std_dev_err=std(abs_err,1);
+  mean_err=mean(err);
+  std_dev_err=std(err,1);
   %compute realtive model errors and deviation
   abs_per_err=abs(err./test_regressand)*100;
   mean_abs_per_err=mean(abs_per_err);

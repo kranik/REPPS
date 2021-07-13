@@ -70,8 +70,23 @@ getStdDev () {
 	echo "$out"
 }
 
-#Simple script to get the absolute value
+#Simple script to get the index of the max of an array, needed to identify the cross-correlation max and get indices
+#Need to pass the name of the array as first argument and then the element count as second argument
+getMaxIndex () {
+	local max=0
+	local maxindex=0
+	local -n array=$1
+	for i in $(seq 0 $(($2-1)))
+	do
+		if [[ "${array[$i]}" > $max ]];then
+			max=${array[$i]}
+			maxindex=$i
+		fi
+	done
+	echo "$maxindex"
+}	
 
+#Simple script to get the absolute value
 getAbs () {
 	local return=0
 	local val=$1
@@ -97,8 +112,8 @@ do
 			echo "-p [NUMBER] -> Specify regressand column." >&1
 			echo "-e [NUMBER LIST] -> Specify events list." >&1
 			echo "-d [NUMBER: 1:$NUM_COMPUTE_MODES]-> Select the compute algortihm to use: 1-> OLS using custom code; 2 -> OLS from octave lib; 3 -> OLS with non-negative weights from octave lib;" >&1
-			echo "-a -> Use flag to specify all frequencies model instead of per frequency one." >&1
-			echo "-x [NUMBER: 1:$NUM_CROSS_MODES]-> Select cross model computation mode: 1 -> Intra-core model (no -t, just use -r onto intself but with a cross-model methodology); 2 -> Inter-core cross-model (-r file to -t file and they should have differing frequency information, but same events list);" >&1
+			[[ $TEAMPLAY == 0 ]] && echo "-a -> Use flag to specify all frequencies model instead of per frequency one." >&1
+			[[ $TEAMPLAY == 0 ]] && echo "-x [NUMBER: 1:$NUM_CROSS_MODES]-> Select cross model computation mode: 1 -> Intra-core model (no -t, just use -r onto intself but with a cross-model methodology); 2 -> Inter-core cross-model (-r file to -t file and they should have differing frequency information, but same events list);" >&1
 			echo "-q [FREQENCY LIST][MHz] -> Specify the frequencies to be used in cross-model for the second core (specified with -t flag)." >&1
 			echo "-m [NUMBER: 1:$NUM_ML_METHODS]-> Type of automatic machine learning search method: 1 -> Bottom-up; 2 -> Top-down; 3 -> Bound exhaustive search; 4 -> Complete exhausetive search;" >&1
 			echo "-c [NUMBER: 1:$NUM_OPT_CRITERIA]-> Select minimization criteria for model optimisation: 1 -> Mean Absolute Percentage Error; 2 -> Relative Standart Deviation; 3 -> Maximum event cross-correlation; 4 -> Average event cross-correlation;" >&1
@@ -106,7 +121,7 @@ do
 			echo "-n [NUMBER] -> Specify max number of events to include in automatic model generation." >&1
 			echo "-i [NUMBER] -> Specify number of randomised training benchmark set folds to use when doing k-folds cross-validation during event search." >&1
 			echo "-g -> Enable check for constant events and remove from search. LR will not work with data that contains constant events." >&1
-			echo "-j [PERCENTAGE] -> Enable check for correlated events and remove from search. Need to specify correlation threshold as percent (e.g. -j 50 means remove all vents that have more than 50% correlation with another event). Keep the events that make the best model." >&1
+			[[ $TEAMPLAY == 0 ]] && echo "-j [PERCENTAGE] -> Enable check for correlated events and remove from search. Need to specify correlation threshold as percent (e.g. -j 50 means remove all vents that have more than 50% correlation with another event). Keep the events that make the best model." >&1
 			echo "-o [NUMBER: 1:$NUM_OUTPUT_MODES]-> Output mode: 1 -> Measured platform physical data; 2 -> Model detailed performance and coefficients; 3 -> Model shortened performance; 4 -> Platform selected event totals; 5 -> Platform selected event averages; 6-> Output model per sample data (for comprehensive plots)." >&1
 			echo "-s [FILEPATH] -> Specify the save file for the analyzed results. If no save file - output to terminal." >&1
 			echo "Mandatory options are: -r [FILE] -b [FILE] -p [NUM] -e [LIST] -d [NUM]/(-m [NUM] -c [NUM] -n [NUM] -l [NUM]) -o [NUM]" >&1
@@ -182,6 +197,11 @@ do
 			fi
 			;;
 		a)
+			if [[ $TEAMPLAY == 1 ]]; then
+				echo "Invalid option: -a!" >&2
+				echo -e "===================="
+		    		exit 1
+			fi 
 			if [[ -n  $ALL_FREQUENCY ]]; then
 		    		echo "Invalid input: option -a has already been used!" >&2
 				echo -e "===================="
@@ -190,6 +210,11 @@ do
 		    	ALL_FREQUENCY=1
 		    	;;
 		x)
+			if [[ $TEAMPLAY == 1 ]]; then
+				echo "Invalid option: -x!" >&2
+				echo -e "===================="
+		    		exit 1
+			fi 
 			if [[ -n $CM_MODE ]]; then
 		    		echo "Invalid input: option -x has already been used!" >&2
 				echo -e "===================="
@@ -263,6 +288,11 @@ do
 		    	CONST_EV_CHECK=1
 		    	;;
 		j)
+			if [[ $TEAMPLAY == 1 ]]; then
+				echo "Invalid option: -j!" >&2
+				echo -e "===================="
+		    		exit 1
+			fi 
 			if [[ -n  $CC_EV_CHECK ]]; then
 		    		echo "Invalid input: option -j has already been used!" >&2
 				echo -e "===================="
@@ -291,7 +321,9 @@ do
 			fi
 			;;        
 		:)
-		    	echo "Option: -$OPTARG requires an argument" >&2
+			[[ $TEAMPLAY == 0 ]] && echo "Option: -$OPTARG requires an argument" >&2
+			[[ $TEAMPLAY == 1 && $OPTARG == "x" ]] && echo "Invalid option: -x!" >&2
+			[[ $TEAMPLAY == 1 && $OPTARG == "j" ]] && echo "Invalid option: -j!" >&2
 			echo -e "===================="
 		    	exit 1
 		    	;;
@@ -2081,8 +2113,8 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-		echo "Mean model relative error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $MEAN_REL_STD_DEV" >&1
+		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2150,8 +2182,8 @@ do
 		echo -e "********************" >&1
 		echo -e "New events list:" >&1
 		echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
-		echo -e "New mean model relative error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "New mean model relative error stdandart deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+		echo -e "New mean model mean absolute percent error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "New mean model relative stdandart deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "New mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "New mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "New model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS"
@@ -2181,8 +2213,8 @@ do
 		echo -e "====================" >&1
 		echo -e "Optimal events list found:" >&1
 		echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
-		echo -e "Mean model relative error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Mean model relative error stdandart deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+		echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS"
@@ -2505,8 +2537,8 @@ do
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && EVENTS_POOL_MAX_EV_CROSS_CORR_IND=$(getMaxIndex EVENTS_POOL_MAX_ev_cross_corr ${#EVENTS_POOL_MAX_ev_cross_corr[@]} )
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && EVENTS_POOL_MAX_EV_CROSS_CORR=${EVENTS_POOL_MAX_ev_cross_corr[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]}
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${EVENTS_POOL_MAX_ev_cross_corr_ev1[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]},${EVENTS_POOL_MAX_ev_cross_corr_ev2[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-	echo "Mean model relative error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
+	echo "Mean Absolute Percentage Error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $EVENTS_POOL_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $EVENTS_POOL_MEAN_EVENTS_POOL_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $EVENTS_POOL_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2839,8 +2871,8 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-		echo "Mean model relative error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $MEAN_REL_STD_DEV" >&1
+		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2922,8 +2954,8 @@ do
 		echo -e "Optimal events list found:" >&1
 		EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
-		echo -e "Mean model relative error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Mean model relative error stdandart deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
+		echo -e "Mean Absolute Percentage Error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_POOL_MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_POOL_MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_POOL_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS"
@@ -3262,8 +3294,8 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-		echo "Mean model relative error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $MEAN_REL_STD_DEV" >&1
+		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3321,8 +3353,8 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 	EVENTS_LIST=$EVENTS_LIST_SAVE
 	EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
-	echo -e "Mean model relative error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Mean model relative error stdandart deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+	echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3676,8 +3708,8 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]} )
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
-			echo "Mean model relative error -> $MEAN_ABS_PER_ERR" >&1
-			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Mean model relative error stdandart deviation -> $MEAN_REL_STD_DEV" >&1
+			echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
+			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3738,8 +3770,8 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 	EVENTS_LIST=$EVENTS_LIST_SAVE
 	EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
-	echo -e "Mean model relative error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Mean model relative error stdandart deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+	echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -4008,15 +4040,21 @@ else
 					else
 						awk -v START="$RESULT_START_LINE" -v SEP='\t' -v FREQ_COL="$RESULT_FREQ_COL" -v FREQ="${FREQ_LIST[$count]}" -v BENCH_COL="$RESULT_BENCH_COL" -v BENCH_SET="${TEST_SET[*]}" 'BEGIN{FS = SEP;len=split(BENCH_SET,ARRAY," ")}{if (NR >= START && $FREQ_COL == FREQ){for (i = 1; i <= len; i++){if ($BENCH_COL == ARRAY[i]){print $0;next}}}}' < "$RESULT_FILE" > "test_set_$seed.data"
 					fi			
-					if [[ $OCTAVE_DEBUG == 1 ]]; then
-					    echo "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')"
-					    exit
+					if [[ $OUTPUT_MODE == 6 ]]; then
+						if [[ $OCTAVE_DEBUG == 1 ]]; then
+				    			echo "load_build_model(4,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')"
+				    			exit
+						else
+				    			octave_output+=$(octave --silent --eval "load_build_model(4,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')" 2> /dev/null)
+				    		fi
+				    		
 					else
-						if [[ $OUTPUT_MODE == 6 ]]; then
-    					    		octave_output+=$(octave --silent --eval "load_build_model(4,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')" 2> /dev/null)
-    						else
-        						octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')" 2> /dev/null)
-    						fi
+						if [[ $OCTAVE_DEBUG == 1 ]]; then
+				    			echo "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')"
+				    			exit
+						else
+   							octave_output+=$(octave --silent --eval "load_build_model(2,$COMPUTE_MODE,'train_set_$seed.data','test_set_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')" 2> /dev/null)
+   						fi
 					fi
 					#Cleanup
 					rm "train_set_$seed.data" "test_set_$seed.data"
@@ -4057,9 +4095,9 @@ IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' '
 #Rel. Std. Dev.
 [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Max. Rel. Error
-IFS=";" read -a max_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+IFS=";" read -a max_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Min. Rel. Error
-IFS=";" read -a min_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Minimum" && $2=="Relative" && $3=="Error[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+IFS=";" read -a min_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Minimum" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Avg Ev. Cross. Corr.
 [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Max Ev. Cross. Corr.
@@ -4192,7 +4230,7 @@ else
 	    printf 'Mean model mean absolute percentage error -> %.5f\n' "$MEAN_ABS_PER_ERR"
     	    printf 'Mean model maximum relative error -> %.5f\n' "$MEAN_MAX_REL_ABS_ERR"
     	    printf 'Mean model minimum relative error -> %.5f\n' "$MEAN_MIN_REL_ABS_ERR"
-    	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && printf 'Mean model relative error stdandart deviation -> %.5f\n' "$MEAN_REL_STD_DEV"
+    	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && printf 'Relative Standart Deviation -> %.5f\n' "$MEAN_REL_STD_DEV"
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model average event cross-correlation -> %.5f\n' "$MEAN_AVG_EV_CROSS_CORR"
     	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model max event cross-correlation -> %.5f\n' "$MEAN_MAX_EV_CROSS_CORR"
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation ${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]} is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
