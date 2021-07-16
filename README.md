@@ -7,6 +7,8 @@ Project continued from [ARMPB_BUILDMODEL](https://github.com/kranik/ARMPM_BUILDM
 
 The REPPS methodology has been used to generate a number of power and energy models for relevant platforms in the TeamPlay project. The research findings are currently in the process of write-up and publication. Once accepted, relevant publications will be linked here.
 
+The full list of benchmarks used to generate and validate the LEON3 models for the TeamPlay project are available at [`LEON3Benchmarks.md`](LEON3Benchmarks.md).
+
 ## Getting Started
 
 The scripts contained in this repo perform offline model generation and analysis. They work can work with any data in the required format, specified in the **Usage** section.
@@ -93,7 +95,7 @@ CPU Frequency	Average Predicted Power[W]	Predicted Power Range[%]	Mean Error[W]	
 80	2.57957	32.823	0.03767	0.09736	2.19653	258.46785	18.38240	0.00007	3.42472	-1.12696E-06
 ```
 
-There is a special output format, which outputs the model predicted value for each sample in the testing/validation set. This format can be used with the [`MODELDATA_plot.py`](Scripts/MODELDATA_plot.py) plotting script to generate more complex visualisation of the model performance. This type of plot can be seen by doing the [Demo](Demo/). The per-sample model performance output data file looks like this:
+There is a special output format, which outputs the model predicted value for each sample in the testing/validation set. This format can be used with the [`MODELDATA_plot.py`](Scripts/MODELDATA_plot.py) plotting script to generate more complex visualisation of the model performance. This type of plot can be seen by doing the [Demo](Demo/Demo.md). The per-sample model performance output data file looks like this:
 
 ```
 #Sample[#]	Predicted Power[W]	Error[W]	Absolute Percentage Error[%]
