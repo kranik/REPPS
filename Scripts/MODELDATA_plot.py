@@ -132,15 +132,15 @@ def main(argv):
 				try:
 					fileopentest = open(arg, 'r')
 					checkreadline = fileopentest.readline()
-					if (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\t", checkreadline)) or (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\tEnergy\[J\]\t", checkreadline)):
+					if (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPU Frequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\t", checkreadline)) or (re.match(r"#Timestamp\tBenchmark\tRun\(#\)\tCPUFrequency\(MHz\)\tCurrent\[A\]\tPower\[W\]\tEnergy\[J\]\t", checkreadline)):
 						fileopentest.close()
 						bfile = arg
 					else:
 						print 'Error in option <-b ' + arg + '>: file <' + arg + '> is not the correct format or is empty. Please enter a valid input file.'
 						print 'The results file should start with the following header, followed by the data:'
-						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent[A]\tPower[W]\t*(EVENTS)'
+						print '#Timestamp\tBenchmark\tRun(#)\tCPUFrequency(MHz)\tCurrent[A]\tPower[W]\t*(EVENTS)'
 						print 'Or if Energy is computed, the following header:'
-						print '#Timestamp\tBenchmark\tRun(#)\tCPU Frequency(MHz)\tCurrent[A]\tPower[W]\tEnergy[J]\t*(EVENTS)'
+						print '#Timestamp\tBenchmark\tRun(#)\tCPUFrequency(MHz)\tCurrent[A]\tPower[W]\tEnergy[J]\t*(EVENTS)'
 						print 'NB: This script DOES NOT currently have a way to determine if the data format is correct so please use the proper data collection tool in order to not break the plots.'
 						fileopentest.close()
 						sys.exit(2)
