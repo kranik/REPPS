@@ -1,0 +1,9 @@
+====================
+Using events list:
+9,10,12,13,14,15,16,18,19,20,22,23 -> icmiss	ichold	dchold	wbhold	ainst	iinst	bpmiss	ahbtutil	branch	call	ldst	load
+====================
+Events remove list:
+11,21,24,17 -> dcmiss,type2,store,ahbutil
+====================
+CPU Frequency	Average Predicted Power[W]	Predicted Power Range[%]	Mean Error[W]	Standard Deviation of Error[W]	Mean Absolute Percentage Error[%]	Relative Standart Deviation[%]	Maximum Relative Error[%]	Minimum Relative Error[%]	Average Event Cross-Correlation[%]	Max Event Cross-Correlation[%]	Model coefficients
+80	2.85240	20.6127	-0.00000	0.04207	1.13664	3898204745118436.50000	1470.34258	0.00000	44.50333	99.88705	2.61526	-6.64855E-05	2.10177E-06	-2.30418E-07	1.7569E-07-9.78606E-07	8.83961E-07	1.0862E-06	3.73317E-07	-5.25209E-07	1.37306E-06	1.51902E-06	-1.15743E-06
