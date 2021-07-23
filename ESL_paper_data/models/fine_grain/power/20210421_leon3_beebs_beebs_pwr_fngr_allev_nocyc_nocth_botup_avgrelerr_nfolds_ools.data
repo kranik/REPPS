@@ -1,6 +1,0 @@
-====================
-Using events list:
-24 -> store
-====================
-CPU Frequency	Average Predicted Power[W]	Predicted Power Range[%]	Mean Error[W]	Standard Deviation of Error[W]	Mean Absolute Percentage Error[%]	Relative Standart Deviation[%]	Maximum Relative Error[%]	Minimum Relative Error[%]	Model coefficients
-80	2.85240	18.1382	0.00000	0.05273	1.51887	4876735019793591.00000	1484.43793	0.00000	2.59799	4.58765E-06
