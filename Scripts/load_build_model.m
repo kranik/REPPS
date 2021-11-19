@@ -147,10 +147,10 @@ if (modeSel == 2)
   disp(["Predicted Regressand Range[%]: " num2str(abs((range(pred_regressand)./min(pred_regressand))*100),"%d")]);
   disp("###########################################################"); 
   disp(["Mean Error: " num2str(mean_err,"%.5f")]);
-  disp(["Standart Deviation of Error: " num2str(std_dev_err,"%.5f")]);
+  disp(["Standard Deviation of Error: " num2str(std_dev_err,"%.5f")]);
   disp("###########################################################");
   disp(["Mean Absolute Percentage Error[%]: " num2str(mean_abs_per_err,"%.5f")]);
-  disp(["Relative Standart Deviation[%]: " num2str(rel_std_dev,"%.5f")]);
+  disp(["Relative Standard Deviation[%]: " num2str(rel_std_dev,"%.5f")]);
   disp(["Maximum Absolute Percentage Error[%]: " num2str(max_abs_per_err,"%.5f")]);
   disp(["Minimum Absolute Percentage Error[%]: " num2str(min_abs_per_err,"%.5f")]);
   if (size(str2num(events_col),2) >= 2) 

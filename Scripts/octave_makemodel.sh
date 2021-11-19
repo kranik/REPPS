@@ -49,7 +49,7 @@ getMean () {
 	echo "scale=10; $total/$2;" | bc
 }
 
-#Simple script to get the standart deviation of an array. Need for cross-models
+#Simple script to get the standard deviation of an array. Need for cross-models
 #Need to pass the name of the array as first argument and then the element count as second argument
 #Build the input string to octave using the array indexes then use the octave function to get answer
 getStdDev () {
@@ -116,7 +116,7 @@ do
 			[[ $TEAMPLAY == 0 ]] && echo "-x [NUMBER: 1:$NUM_CROSS_MODES]-> Select cross model computation mode: 1 -> Intra-core model (no -t, just use -r onto intself but with a cross-model methodology); 2 -> Inter-core cross-model (-r file to -t file and they should have differing frequency information, but same events list);" >&1
 			echo "-q [FREQENCY LIST][MHz] -> Specify the frequencies to be used in cross-model for the second core (specified with -t flag)." >&1
 			echo "-m [NUMBER: 1:$NUM_ML_METHODS]-> Type of automatic machine learning search method: 1 -> Bottom-up; 2 -> Top-down; 3 -> Bound exhaustive search; 4 -> Complete exhausetive search;" >&1
-			echo "-c [NUMBER: 1:$NUM_OPT_CRITERIA]-> Select minimization criteria for model optimisation: 1 -> Mean Absolute Percentage Error; 2 -> Relative Standart Deviation; 3 -> Maximum event cross-correlation; 4 -> Average event cross-correlation;" >&1
+			echo "-c [NUMBER: 1:$NUM_OPT_CRITERIA]-> Select minimization criteria for model optimisation: 1 -> Mean Absolute Percentage Error; 2 -> Relative Standard Deviation; 3 -> Maximum event cross-correlation; 4 -> Average event cross-correlation;" >&1
 			echo "-l [NUMBER LIST] -> Specify events pool." >&1
 			echo "-n [NUMBER] -> Specify max number of events to include in automatic model generation." >&1
 			echo "-i [NUMBER] -> Specify number of randomised training benchmark set folds to use when doing k-folds cross-validation during event search." >&1
@@ -943,7 +943,7 @@ if [[ "$OUTPUT_MODE" != "1" && "$OUTPUT_MODE" != "2" && "$OUTPUT_MODE" != "3" &&
 else
 	if [[ "$OUTPUT_MODE" != "2" && "$OUTPUT_MODE" != "3" && -n $CM_MODE ]]; then 
 		echo "Incompatible flags: -o $OUTPUT_MODE and -x $CM_MODE" >&2
-		echo "Please do not use physical characteristics output for cross model. You can extract this information separately for each cluster usign the standart modes." >&2
+		echo "Please do not use physical characteristics output for cross model. You can extract this information separately for each cluster usign the standard modes." >&2
 	    	echo -e "===================="
 	    	exit 1
 	fi
@@ -1194,7 +1194,7 @@ if [[ -n $AUTO_SEARCH ]]; then
 			echo "$MODEL_TYPE -> Minimize model mean absolute percentage error." >&1
 			;;
 		2) 
-			echo "$MODEL_TYPE -> Minimize model relative standart deviation." >&1
+			echo "$MODEL_TYPE -> Minimize model relative standard deviation." >&1
 			;;
 		3) 
 			echo "$MODEL_TYPE -> Minimize model maximum event cross-correlation." >&1
@@ -1586,7 +1586,7 @@ if [[ -n $CC_EV_CHECK ]];then
 		IFS=";" read -a max_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr. EV2
 		IFS=";" read -a max_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-		#Get the means for both relative error and standart deviation and output
+		#Get the means for both relative error and standard deviation and output
 		#Depending oon type though we use a different value for EVENTS_LIST_NEW to try and minmise
 		MAX_EV_CROSS_CORR_IND=$(getMaxIndex max_ev_cross_corr ${#max_ev_cross_corr[@]})
 		MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
@@ -1825,8 +1825,8 @@ do
 
 					#Collect octave output this depends on program mode
 					octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
-					#There is no standart deviation since the error is only 1 number so just add N/A
-					octave_output+="\nRelative Standart Deviation[%]: null\n"
+					#There is no standard deviation since the error is only 1 number so just add N/A
+					octave_output+="\nRelative Standard Deviation[%]: null\n"
 					octave_output+="###########################################################\n"
 					#Cleanup
 					rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"	
@@ -1877,7 +1877,7 @@ do
 					#Mean Abs. Per. Error
 					IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 					#Rel. Std. Dev.
-					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Avg Ev. Cross. Corr.
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Max Ev. Cross. Corr.
@@ -1903,7 +1903,7 @@ do
 					octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -1982,7 +1982,7 @@ do
 						octave_output+="Average Predicted Regressand: $CROSS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -2036,7 +2036,7 @@ do
 						#Mean Abs. Per. Error
 						IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 						#Rel. Std. Dev.
-						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Avg Ev. Cross. Corr.
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Max Ev. Cross. Corr.
@@ -2062,7 +2062,7 @@ do
 						octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -2087,7 +2087,7 @@ do
 		#Mean Abs. Per. Error
 		IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 		#Rel. Std. Dev.
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Avg Ev. Cross. Corr.
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr.
@@ -2096,7 +2096,7 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr. EV2
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-		#Get the means for both relative error and standart deviation and output
+		#Get the means for both relative error and standard deviation and output
 		#Depending oon type though we use a different value for EVENTS_LIST_NEW to try and minmise
 		MEAN_ABS_PER_ERR=$(getMean mean_abs_per_err ${#mean_abs_per_err[@]} )
 		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && MEAN_REL_STD_DEV=$(getMean rel_std_dev ${#rel_std_dev[@]} )
@@ -2106,7 +2106,7 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standard Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2206,7 +2206,7 @@ do
 		echo -e "Optimal events list found:" >&1
 		echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
 		echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standard Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS"
@@ -2246,8 +2246,8 @@ do
 
 				#Collect octave output this depends on program mode
 				octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
-				#There is no standart deviation since the error is only 1 number so just add N/A
-				octave_output+="\nRelative Standart Deviation[%]: null\n"
+				#There is no standard deviation since the error is only 1 number so just add N/A
+				octave_output+="\nRelative Standard Deviation[%]: null\n"
 				octave_output+="###########################################################\n"
 				#Cleanup
 				rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
@@ -2298,7 +2298,7 @@ do
 				#Mean Abs. Per. Error
 				IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 				#Rel. Std. Dev.
-				IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+				IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 				#Avg Ev. Cross. Corr.
 				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 				#Max Ev. Cross. Corr.
@@ -2324,7 +2324,7 @@ do
 				octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 				octave_output+="###########################################################\n"
 				octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-				octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+				octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 				octave_output+="###########################################################\n"
 				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 				[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -2400,7 +2400,7 @@ do
 					octave_output+="Average Predicted Regressand: $CROSS_MEAN_AVG_PRED_POW\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -2452,7 +2452,7 @@ do
 					#Mean Abs. Per. Error
 					IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 					#Rel. Std. Dev.
-					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Avg Ev. Cross. Corr.
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Max Ev. Cross. Corr.
@@ -2478,7 +2478,7 @@ do
 					octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -2503,7 +2503,7 @@ do
 	#Mean Abs. Per. Error
 	IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 	#Rel. Std. Dev.
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 	#Avg Ev. Cross. Corr.
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 	#Max Ev. Cross. Corr.
@@ -2512,7 +2512,7 @@ do
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a EVENTS_POOL_MAX_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 	#Max Ev. Cross. Corr. EV2
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a EVENTS_POOL_MAX_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-	#Get the means for both relative error and standart deviation and output
+	#Get the means for both relative error and standard deviation and output
 	#Depending oon type though we use a different value for EVENTS_LIST_NEW to try and minmise
 	EVENTS_POOL_MEAN_ABS_PER_ERR=$(getMean mean_abs_per_err ${#mean_abs_per_err[@]} )
 	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && EVENTS_POOL_MEAN_REL_STD_DEV=$(getMean rel_std_dev ${#rel_std_dev[@]} )
@@ -2522,7 +2522,7 @@ do
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && EVENTS_POOL_MAX_EV_CROSS_CORR=${EVENTS_POOL_MAX_ev_cross_corr[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]}
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${EVENTS_POOL_MAX_ev_cross_corr_ev1[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]},${EVENTS_POOL_MAX_ev_cross_corr_ev2[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "Mean Absolute Percentage Error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standard Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $EVENTS_POOL_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $EVENTS_POOL_MEAN_EVENTS_POOL_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $EVENTS_POOL_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2572,8 +2572,8 @@ do
 
 					#Collect octave output this depends on program mode
 					octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
-					#There is no standart deviation since the error is only 1 number so just add N/A
-					octave_output+="\nRelative Standart Deviation[%]: null\n"
+					#There is no standard deviation since the error is only 1 number so just add N/A
+					octave_output+="\nRelative Standard Deviation[%]: null\n"
 					octave_output+="###########################################################\n"
 					#Cleanup
 					rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
@@ -2624,7 +2624,7 @@ do
 					#Mean Abs. Per. Error
 					IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 					#Rel. Std. Dev.
-					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Avg Ev. Cross. Corr.
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Max Ev. Cross. Corr.
@@ -2650,7 +2650,7 @@ do
 					octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -2726,7 +2726,7 @@ do
 						octave_output+="Average Predicted Regressand: $CROSS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -2778,7 +2778,7 @@ do
 						#Mean Abs. Per. Error
 						IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 						#Rel. Std. Dev.
-						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Avg Ev. Cross. Corr.
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Max Ev. Cross. Corr.
@@ -2804,7 +2804,7 @@ do
 						octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -2829,7 +2829,7 @@ do
 		#Mean Abs. Per. Error
 		IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 		#Rel. Std. Dev.
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Avg Ev. Cross. Corr.
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr.
@@ -2838,7 +2838,7 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr. EV2
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-		#Get the means for both relative error and standart deviation and output
+		#Get the means for both relative error and standard deviation and output
 		#Depending oon type though we use a different value for EVENTS_POOL_NEW to try and minmise
 		MEAN_ABS_PER_ERR=$(getMean mean_abs_per_err ${#mean_abs_per_err[@]} )
 		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && MEAN_REL_STD_DEV=$(getMean rel_std_dev ${#rel_std_dev[@]} )
@@ -2848,7 +2848,7 @@ do
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standard Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -2931,7 +2931,7 @@ do
 		EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
 		echo -e "Mean Absolute Percentage Error -> $EVENTS_POOL_MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standard Deviation -> $EVENTS_POOL_MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_POOL_MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_POOL_MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_POOL_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_POOL_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_POOL_MAX_EV_CROSS_CORR_EV_LABELS"
@@ -2985,8 +2985,8 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 
 					#Collect octave output this depends on program mode
 					octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
-					#There is no standart deviation since the error is only 1 number so just add N/A
-					octave_output+="\nRelative Standart Deviation[%]: null\n"
+					#There is no standard deviation since the error is only 1 number so just add N/A
+					octave_output+="\nRelative Standard Deviation[%]: null\n"
 					octave_output+="###########################################################\n"
 					#Cleanup
 					rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
@@ -3037,7 +3037,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					#Mean Abs. Per. Error
 					IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 					#Rel. Std. Dev.
-					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+					IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Avg Ev. Cross. Corr.
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 					#Max Ev. Cross. Corr.
@@ -3063,7 +3063,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 					octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 					[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -3141,7 +3141,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						octave_output+="Average Predicted Regressand: $CROSS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -3193,7 +3193,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						#Mean Abs. Per. Error
 						IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 						#Rel. Std. Dev.
-						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Avg Ev. Cross. Corr.
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Max Ev. Cross. Corr.
@@ -3219,7 +3219,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 						octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -3244,7 +3244,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 		#Mean Abs. Per. Error
 		IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 		#Rel. Std. Dev.
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Avg Ev. Cross. Corr.
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr.
@@ -3253,7 +3253,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 		#Max Ev. Cross. Corr. EV2
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-		#Get the means for both relative error and standart deviation and output
+		#Get the means for both relative error and standard deviation and output
 		#Depending oon type though we use a different value for EVENTS_LIST_NEW to try and minmise
 		MEAN_ABS_PER_ERR=$(getMean mean_abs_per_err ${#mean_abs_per_err[@]} )
 		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && MEAN_REL_STD_DEV=$(getMean rel_std_dev ${#rel_std_dev[@]} )
@@ -3263,7 +3263,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 		echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
-		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
+		[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standard Deviation -> $MEAN_REL_STD_DEV" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 		[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3322,7 +3322,7 @@ if [[ $AUTO_SEARCH == 3 ]]; then
 	EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
 	echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standard Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3390,8 +3390,8 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 
 						#Collect octave output this depends on program mode
 						octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST_TEMP')" 2> /dev/null)
-						#There is no standart deviation since the error is only 1 number so just add N/A
-						octave_output+="\nRelative Standart Deviation[%]: null\n"
+						#There is no standard deviation since the error is only 1 number so just add N/A
+						octave_output+="\nRelative Standard Deviation[%]: null\n"
 						octave_output+="###########################################################\n"
 						#Cleanup
 						rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
@@ -3442,7 +3442,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						#Mean Abs. Per. Error
 						IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 						#Rel. Std. Dev.
-						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+						IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Avg Ev. Cross. Corr.
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 						#Max Ev. Cross. Corr.
@@ -3468,7 +3468,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 						octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 						octave_output+="###########################################################\n"
 						octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-						octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+						octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 						octave_output+="###########################################################\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 						[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -3546,7 +3546,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							octave_output+="Average Predicted Regressand: $CROSS_MEAN_AVG_PRED_POW\n"
 							octave_output+="###########################################################\n"
 							octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-							octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+							octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 							octave_output+="###########################################################\n"
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -3598,7 +3598,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							#Mean Abs. Per. Error
 							IFS=";" read -a nfolds_mean_abs_per_err <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 							#Rel. Std. Dev.
-							IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+							IFS=";" read -a nfolds_rel_std_dev <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 							#Avg Ev. Cross. Corr.
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a nfolds_avg_ev_nfolds_corr <<< $(echo -e "$nfolds_octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 							#Max Ev. Cross. Corr.
@@ -3624,7 +3624,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 							octave_output+="Average Predicted Regressand: $NFOLDS_MEAN_AVG_PRED_POW\n"
 							octave_output+="###########################################################\n"
 							octave_output+="Mean Absolute Percentage Error[%]: $NFOLDS_MEAN_ABS_PER_ERR\n"
-							octave_output+="Relative Standart Deviation[%]: $NFOLDS_REL_STD_DEV\n"
+							octave_output+="Relative Standard Deviation[%]: $NFOLDS_REL_STD_DEV\n"
 							octave_output+="###########################################################\n"
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $NFOLDS_MEAN_AVG_EV_NFOLDS_CORR\n"
 							[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $NFOLDS_MAX_EV_NFOLDS_CORR\n"
@@ -3650,7 +3650,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 			#Mean Abs. Per. Error
 			IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 			#Rel. Std. Dev.
-			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 			#Avg Ev. Cross. Corr.
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a avg_ev_cross_corr <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Average" && $2=="Event" && $3=="Cross-Correlation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 			#Max Ev. Cross. Corr.
@@ -3659,7 +3659,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev1 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 			#Max Ev. Cross. Corr. EV2
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && IFS=";" read -a max_ev_cross_corr_ev2 <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Most" && $2=="Cross-Correlated" && $3=="Events:" && $5=="and"){ print $6 }}' | tr "\n" ";" | head -c -1)
-			#Get the means for both relative error and standart deviation and output
+			#Get the means for both relative error and standard deviation and output
 			#Depending oon type though we use a different value for EVENTS_LIST_NEW to try and minmise
 			MEAN_ABS_PER_ERR=$(getMean mean_abs_per_err ${#mean_abs_per_err[@]} )
 			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && MEAN_REL_STD_DEV=$(getMean rel_std_dev ${#rel_std_dev[@]} )
@@ -3669,7 +3669,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR=${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]}
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && MAX_EV_CROSS_CORR_EV_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="${max_ev_cross_corr_ev1[$MAX_EV_CROSS_CORR_IND]},${max_ev_cross_corr_ev2[$MAX_EV_CROSS_CORR_IND]}" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 			echo "Mean Absolute Percentage Error -> $MEAN_ABS_PER_ERR" >&1
-			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standart Deviation -> $MEAN_REL_STD_DEV" >&1
+			[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo "Relative Standard Deviation -> $MEAN_REL_STD_DEV" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model average event cross-correlation -> $MEAN_AVG_EV_CROSS_CORR" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Mean model max event cross-correlation -> $MEAN_MAX_EV_CROSS_CORR" >&1
 			[[ $(echo "$EVENTS_LIST_TEMP" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation $MAX_EV_CROSS_CORR is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3731,7 +3731,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 	EVENTS_LIST_LABELS=$(awk -v SEP='\t' -v START=$((RESULT_START_LINE-1)) -v COLUMNS="$EVENTS_LIST" 'BEGIN{FS = SEP;len=split(COLUMNS,ARRAY,",")}{if (NR == START){for (i = 1; i <= len; i++){print $ARRAY[i]}}}' < "$RESULT_FILE" | tr "\n" "," | head -c -1)
 	echo "$EVENTS_LIST -> $EVENTS_LIST_LABELS" >&1
 	echo -e "Mean Absolute Percentage Error -> $EVENTS_LIST_MEAN_ABS_PER_ERR" >&1
-	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standart Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
+	[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && echo -e "Relative Standard Deviation -> $EVENTS_LIST_MEAN_REL_STD_DEV" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model average event cross-correlation -> $EVENTS_LIST_MEAN_AVG_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Mean model max event cross-correlation -> $EVENTS_LIST_MEAN_MAX_EV_CROSS_CORR" >&1
 	[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo -e "Model max event cross-correlation $EVENTS_LIST_MAX_EV_CROSS_CORR is at ${FREQ_LIST[$EVENTS_LIST_MAX_EV_CROSS_CORR_IND]} MHz between $EVENTS_LIST_MAX_EV_CROSS_CORR_EV_LABELS" >&1
@@ -3831,13 +3831,13 @@ if [[ -n $ALL_FREQUENCY ]]; then
 
 				#Collect octave output this depends on program mode
 				octave_output=$(octave --silent --eval "load_build_model(3,$COMPUTE_MODE,'train_set_1_$seed.data','test_set_1_$seed.data',0,$((RESULT_EVENTS_COL_START-1)),'train_set_2_$seed.data','test_set_2_$seed.data',0,$((TEST_EVENTS_COL_START-1)),$REGRESSAND_COL,'$EVENTS_LIST')" 2> /dev/null)
-				#There is no standart deviation since the error is only 1 number so just add N/A
-				octave_output+="\nRelative Standart Deviation[%]: null\n"
+				#There is no standard deviation since the error is only 1 number so just add N/A
+				octave_output+="\nRelative Standard Deviation[%]: null\n"
 				octave_output+="###########################################################\n"
 				#Cleanup
 				rm "train_set_1_$seed.data" "test_set_1_$seed.data" "train_set_2_$seed.data" "test_set_2_$seed.data"
 			else
-				#if no cross model then procede standart
+				#if no cross model then procede standard
 				#Split data and collect output, then cleanup 	
 				#Split input into train and test set
 				seed=$RANDOM
@@ -3982,7 +3982,7 @@ else
 					octave_output+="Standard Deviation of Error: $CROSS_ERR_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					octave_output+="Mean Absolute Percentage Error[%]: $CROSS_MEAN_ABS_PER_ERR\n"
-					octave_output+="Relative Standart Deviation[%]: $CROSS_REL_STD_DEV\n"
+					octave_output+="Relative Standard Deviation[%]: $CROSS_REL_STD_DEV\n"
 					octave_output+="###########################################################\n"
 					[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Average Event Cross-Correlation[%]: $CROSS_MEAN_AVG_EV_CROSS_CORR\n"
 					[[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && octave_output+="Maximum Event Cross-Correlation[%]: $CROSS_MAX_EV_CROSS_CORR\n"
@@ -4049,11 +4049,11 @@ IFS=";" read -a pred_regressand_range <<< $(echo -e "$octave_output" | awk -v SE
 #Mean Error
 IFS=";" read -a mean_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Error:"){ print $3 }}' | tr "\n" ";" | head -c -1)
 #Abs. Err. Std. Dev.
-[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a std_dev_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Standart" && $2=="Deviation" && $3=="of" && $4=="Error:"){ print $5 }}' | tr "\n" ";" | head -c -1)
+[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a std_dev_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Standard" && $2=="Deviation" && $3=="of" && $4=="Error:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Mean Abs. Per. Error
 IFS=";" read -a mean_abs_per_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Mean" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Rel. Std. Dev.
-[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standart" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
+[[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && IFS=";" read -a rel_std_dev <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Relative" && $2=="Standard" && $3=="Deviation[%]:"){ print $4 }}' | tr "\n" ";" | head -c -1)
 #Max. Rel. Error
 IFS=";" read -a max_rel_abs_err <<< $(echo -e "$octave_output" | awk -v SEP=' ' 'BEGIN{FS=SEP}{if ($1=="Maximum" && $2=="Absolute" && $3=="Percentage" && $4=="Error[%]:"){ print $5 }}' | tr "\n" ";" | head -c -1)
 #Min. Rel. Error
@@ -4091,10 +4091,10 @@ case $OUTPUT_MODE in
 	2)
 		if [[ -z $CM_MODE || -z $ALL_FREQUENCY ]]; then
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
-				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tMean Error[$REGRESSAND_UNIT]\tStandard Deviation of Error[$REGRESSAND_UNIT]\tMean Absolute Percentage Error[%]\tRelative Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tMean Error[$REGRESSAND_UNIT]\tStandard Deviation of Error[$REGRESSAND_UNIT]\tMean Absolute Percentage Error[%]\tRelative Standard Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]\tModel coefficients"
 				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${mean_err[\$i]}\t\${std_dev_err[\$i]}\t\${mean_abs_per_err[\$i]}\t\${rel_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}\t\${model_coeff[\$i]}"
 			else
-				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tMean Error[$REGRESSAND_UNIT]\tStandard Deviation of Error[$REGRESSAND_UNIT]\tMean Absolute Percentage Error[%]\tRelative Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tModel coefficients"
+				HEADER="CPU Frequency\tAverage Predicted $REGRESSAND_NAME[$REGRESSAND_UNIT]\tPredicted $REGRESSAND_NAME Range[%]\tMean Error[$REGRESSAND_UNIT]\tStandard Deviation of Error[$REGRESSAND_UNIT]\tMean Absolute Percentage Error[%]\tRelative Standard Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tModel coefficients"
 				DATA="\${FREQ_LIST[\$i]}\t\${avg_pred_regressand[\$i]}\t\${pred_regressand_range[\$i]}\t\${mean_err[\$i]}\t\${std_dev_err[\$i]}\t\${mean_abs_per_err[\$i]}\t\${rel_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${model_coeff[\$i]}"
 			fi			
 		else
@@ -4110,10 +4110,10 @@ case $OUTPUT_MODE in
 	3)
 		if [[ -z $CM_MODE || -z $ALL_FREQUENCY ]]; then
 			if [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]]; then
-				HEADER="Mean Absolute Percentage Error[%]\tRelative Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]"
+				HEADER="Mean Absolute Percentage Error[%]\tRelative Standard Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]\tAverage Event Cross-Correlation[%]\tMax Event Cross-Correlation[%]"
 				DATA="\${mean_abs_per_err[\$i]}\t\${rel_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}\t\${avg_ev_cross_corr[\$i]}\t\${max_ev_cross_corr[\$i]}"
 			else
-				HEADER="Mean Absolute Percentage Error[%]\tRelative Standart Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]"
+				HEADER="Mean Absolute Percentage Error[%]\tRelative Standard Deviation[%]\tMaximum Relative Error[%]\tMinimum Relative Error[%]"
 				DATA="\${mean_abs_per_err[\$i]}\t\${rel_std_dev[\$i]}\t\${max_rel_abs_err[\$i]}\t\${min_rel_abs_err[\$i]}"
 			fi			
 		else
@@ -4190,7 +4190,7 @@ else
 	    printf 'Mean model mean absolute percentage error -> %.5f\n' "$MEAN_ABS_PER_ERR"
     	    printf 'Mean model maximum relative error -> %.5f\n' "$MEAN_MAX_REL_ABS_ERR"
     	    printf 'Mean model minimum relative error -> %.5f\n' "$MEAN_MIN_REL_ABS_ERR"
-    	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && printf 'Relative Standart Deviation -> %.5f\n' "$MEAN_REL_STD_DEV"
+    	    [[ -z $CM_MODE || -z $ALL_FREQUENCY ]] && printf 'Relative Standard Deviation -> %.5f\n' "$MEAN_REL_STD_DEV"
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model average event cross-correlation -> %.5f\n' "$MEAN_AVG_EV_CROSS_CORR"
     	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && printf 'Mean model max event cross-correlation -> %.5f\n' "$MEAN_MAX_EV_CROSS_CORR"
 	    [[ $(echo "$EVENTS_LIST" | tr "," "\n" | wc -l) -ge 2 ]] && echo "Model max event cross-correlation ${max_ev_cross_corr[$MAX_EV_CROSS_CORR_IND]} is at ${FREQ_LIST[$MAX_EV_CROSS_CORR_IND]} MHz between $MAX_EV_CROSS_CORR_EV_LABELS" >&1
