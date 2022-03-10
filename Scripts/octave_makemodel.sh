@@ -3346,7 +3346,7 @@ if [[ $AUTO_SEARCH == 4 ]]; then
 	EVENTS_FULL_SIZE=$(echo "$EVENTS_LIST_SIZE+$EVENTS_POOL_SIZE;" | bc )
 	EVENTS_FULL_SPACE=$(echo $(seq 1 1 $EVENTS_FULL_SIZE) | tr " " ",")
 	echo "Full event space size -> $EVENTS_FULL_SPACE">&1
-	for numcombev in $(seq 1 1 $EVENTS_FULL_SIZE)
+	for numcombev in $(seq 1 1 $EVENTS_POOL_SIZE)
 	do
 		#Use octave to generate combinations. 
 		#Octave has a weird bug sometimes where it fails to produce output so my way of overcoming that is to use a loop and make sure our output is useful
