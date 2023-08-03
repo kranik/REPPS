@@ -5,9 +5,15 @@ Project continued from [ARMPB_BUILDMODEL](https://github.com/kranik/ARMPM_BUILDM
 
 ## Publications
 
-The REPPS methodology has been used to generate a number of power and energy models for relevant platforms in the TeamPlay project. The research findings are currently in the process of write-up and publication. Once accepted, relevant publications will be linked here.
+The REPPS methodology has been used to generate a number of power and energy models for relevant platforms in the TeamPlay project. Here are some of the relevant publications:
 
-The full list of benchmarks used to generate and validate the LEON3 models for the TeamPlay project are available at [`LEON3Benchmarks.md`](LEON3Benchmarks.md).
+[Robust and accurate fine-grain power models for embedded systems with no on-chip pmu](https://ieeexplore.ieee.org/abstract/document/9695984)
+
+[EnergyAnalyzer: Using Static WCET Analysis Techniques to Estimate the Energy Consumption of Embedded Applications](https://drops.dagstuhl.de/opus/volltexte/2023/18438/)
+
+[The TeamPlay Project: Analysing and Optimising Time, Energy, and Security for Cyber-Physical Systems](https://ieeexplore.ieee.org/abstract/document/10137198)
+
+The full list of benchmarks used to generate and validate the LEON3 models for the TeamPlay project are available at [`LEON3Benchmarks.md`](LEON3Benchmarks.md)
 
 ## Getting Started
 
