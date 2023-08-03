@@ -7,7 +7,7 @@ Project continued from [ARMPB_BUILDMODEL](https://github.com/kranik/ARMPM_BUILDM
 
 The REPPS methodology has been used to generate a number of power and energy models for relevant platforms in the TeamPlay project. Here are some of the relevant publications:
 
-[Robust and accurate fine-grain power models for embedded systems with no on-chip pmu](https://ieeexplore.ieee.org/abstract/document/9695984)
+[Robust and Accurate Fine-Grain Power Models for Embedded Systems With No On-Chip PMU](https://ieeexplore.ieee.org/abstract/document/9695984)
 
 [EnergyAnalyzer: Using Static WCET Analysis Techniques to Estimate the Energy Consumption of Embedded Applications](https://drops.dagstuhl.de/opus/volltexte/2023/18438/)
 
