@@ -25,7 +25,7 @@ This repo contains only the control scripts and does not include a version of oc
 
 The scripts use `GNU bash, version 5.0.17(1)-release` and the platform is built on `Ubuntu 20.04.1 LTS`, kernel version `5.8.0-59-generic`. However the methodology should be portable to other systems, since the scripts primarily use standard command line programs, such as `awk`, `sed`, `bc`, etc. and calls to `octave`. The project uses `GNU Octave, version 5.2.0 (2020-01-31)` and should work with higher versions as well. Please check with your distro package database for the appropriate octave version or download and compile from [here](https://ftp.gnu.org/gnu/octave/). In addition, the script also uses functions from the _Octave_ `statistics` package, so you also need to install and load that before running the model generation.
 
-**DISCLAIMER - If you have any issues please don't hesitate to contact via [email](mailto:kr.nikovgmail.com).**
+**DISCLAIMER - If you have any issues please don't hesitate to contact via [email](mailto:kr.nikov@gmail.com).**
 
 ### Setup
 
@@ -137,7 +137,7 @@ You can either explicitly specify the events list to be used for the model with 
 
 ## Troubleshooting
 
-The scripts contain automatic checks for illegal input combinations to flags or illegal flag combinations. However if you do discover a bug please submit a pull request directly on the github repository or email [Dr Kris Nikov](mailto:kr.nikovgmail.com) with details of the bug. The code is also heavily commented, so please use that as a further reference to the functional capabilities and options.
+The scripts contain automatic checks for illegal input combinations to flags or illegal flag combinations. However if you do discover a bug please submit a pull request directly on the github repository or email [Dr Kris Nikov](mailto:kr.nikov@gmail.com) with details of the bug. The code is also heavily commented, so please use that as a further reference to the functional capabilities and options.
 
 ### Demo
 
@@ -149,7 +149,7 @@ Anyone is welcome to contribute to the project as long as they respect the licen
 
 ## Author
 
-All of the code and instructions presented here are developed by [Dr Kris Nikov](mailto:kr.nikovgmail.com) as a fork of the [ARMPB_BUILDMODEL](https://github.com/kranik/ARMPM_BUILDMODEL) project.
+All of the code and instructions presented here are developed by [Dr Kris Nikov](mailto:kr.nikov@gmail.com) as a fork of the [ARMPB_BUILDMODEL](https://github.com/kranik/ARMPM_BUILDMODEL) project.
 
 ## Licence
 
