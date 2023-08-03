@@ -1,0 +1,6 @@
+====================
+Using events list:
+24,19 -> store	branch
+====================
+CPU Frequency	Average Predicted Power[W]	Predicted Power Range[%]	Mean Error[W]	Standard Deviation of Error[W]	Mean Absolute Percentage Error[%]	Relative Standart Deviation[%]	Maximum Relative Error[%]	Minimum Relative Error[%]	Average Event Cross-Correlation[%]	Max Event Cross-Correlation[%]	Model coefficients
+80	2.67162	7.06574	-0.05438	0.08468	3.00408	155.72893	17.22085	0.00813	48.30314	48.30314	2.70279	3.50848E-06	-1.07141E-06
